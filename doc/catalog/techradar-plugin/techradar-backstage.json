@@ -1,0 +1,89 @@
+{
+  "entries": [
+    {
+      "key": "java",
+      "id": "java",
+      "title": "Java",
+      "url": "",
+      "timeline": [
+        {
+          "date": "2025-03-01",
+          "ringId": "adopt",
+          "moved": 0
+        }
+      ],
+      "quadrant": "languages",
+      "active": true
+    },
+    {
+      "key": "kotlin",
+      "id": "kotlin",
+      "title": "Kotlin",
+      "url": "",
+      "timeline": [
+        {
+          "date": "2025-03-01",
+          "ringId": "adopt",
+          "moved": 0
+        }
+      ],
+      "quadrant": "languages",
+      "active": true
+    },
+    {
+      "key": "typescript",
+      "id": "typescript",
+      "title": "Typescript",
+      "url": "",
+      "timeline": [
+        {
+          "date": "2025-03-01",
+          "ringId": "adopt",
+          "moved": 0
+        }
+      ],
+      "quadrant": "languages",
+      "active": true
+    }
+  ],
+  "quadrants": [
+    {
+      "id": "security",
+      "name": "Security"
+    },
+    {
+      "id": "platforms",
+      "name": "Platforms"
+    },
+    {
+      "id": "languages",
+      "name": "Languages & Frameworks"
+    },
+    {
+      "id": "data",
+      "name": "Data & Messaging"
+    }
+  ],
+  "rings": [
+    {
+      "id": "adopt",
+      "name": "Adopt",
+      "color": "#93c47d"
+    },
+    {
+      "id": "trial",
+      "name": "Trial",
+      "color": "#93d2c2"
+    },
+    {
+      "id": "assess",
+      "name": "Assess",
+      "color": "#fbdb84"
+    },
+    {
+      "id": "hold",
+      "name": "Hold",
+      "color": "#efafa9"
+    }
+  ]
+}

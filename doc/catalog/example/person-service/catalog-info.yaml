@@ -1,0 +1,47 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: person-service
+  description: |
+    The Person Service for managing person-related data
+    
+    [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=org.goafabric%3Aperson-service&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=org.goafabric%3Aperson-service)
+    [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=org.goafabric%3Aperson-service&metric=coverage)](https://sonarcloud.io/summary/new_code?id=org.goafabric%3Aperson-service)
+
+    [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=org.goafabric%3Aperson-service&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=org.goafabric%3Aperson-service)
+    [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=org.goafabric%3Aperson-service&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=org.goafabric%3Aperson-service)
+    [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=org.goafabric%3Aperson-service&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=org.goafabric%3Aperson-service)
+  tags:
+    - spring-boot
+    - microservice
+  annotations:
+    github.com/project-slug: goafabric/person-service
+  links:
+    - url: https://github.com/goafabric/person-service
+      title: GitHub Repository
+spec:
+  type: service
+  lifecycle: production
+  owner: team-green
+  
+  providesApis:
+    - person-api
+  dependsOn:
+    - component:callee-service
+
+---
+
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: person-api
+  description: OpenAPI definition for Core Service.
+  tags:
+    - openapi
+    - person-service-service
+spec:
+  type: openapi
+  lifecycle: production
+  owner: team-blue
+  definition:
+    $text: https://github.com/goafabric/person-service/blob/develop/doc/generated/openapi.json

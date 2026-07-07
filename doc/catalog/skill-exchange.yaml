@@ -1,0 +1,27 @@
+# default-lists.yaml
+
+skills:
+  - name: Web
+    category: DISCIPLINE
+  - name: Backend
+    category: DISCIPLINE
+  - name: JavaScript
+    category: LANGUAGES
+    subset: SKILLS
+    disciplines:
+      - Web
+      - Backend
+  - name: API Development
+    category: TECHNIQUES
+    subset: SKILLS
+    disciplines:
+      - Backend
+
+locations:
+  - Stockholm
+  - New York
+  - London
+
+embedPriorityLabels:
+  - Tech Lead
+  - Company Bet Lead

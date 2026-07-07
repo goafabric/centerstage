@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Centerstage</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+  <div class="app-layout">
+
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+      <div class="sidebar-header">
+        <span class="sidebar-logo">&#9733;</span>
+        <span class="sidebar-title">Centerstage</span>
+      </div>
+      <ul class="nav-list">
+        <li class="nav-item" id="nav-catalog" onclick="navigate('catalog')">
+          <span class="nav-icon">&#9783;</span> Catalog
+        </li>
+        <li class="nav-item" id="nav-apis" onclick="navigate('apis')">
+          <span class="nav-icon">&#9729;</span> APIs
+        </li>
+        <li class="nav-item" id="nav-techradar" onclick="navigate('techradar')">
+          <span class="nav-icon">&#9678;</span> Tech Radar
+        </li>
+        <li class="nav-item" id="nav-docs" onclick="navigate('docs')">
+          <span class="nav-icon">&#9997;</span> Docs
+        </li>
+      </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content" id="main-content">
+      <div id="view-container"></div>
+    </main>
+
+  </div>
+
+  <script src="components/catalog.js"></script>
+  <script src="components/overview.js"></script>
+  <script src="components/api-view.js"></script>
+  <script src="components/adr.js"></script>
+  <script src="components/docs.js"></script>
+  <script src="components/graph.js"></script>
+  <script src="components/apis.js"></script>
+  <script src="plugins/techradar.js"></script>
+  <script>
+    function navigate(route, params) {
+      const hash = params ? route + '/' + params : route;
+      window.location.hash = hash;
+    }
+
+    function router() {
+      const hash = window.location.hash.replace('#', '') || 'catalog';
+      const parts = hash.split('/');
+      const view = parts[0];
+
+      // Update active nav
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('nav-item--active'));
+      const navEl = document.getElementById('nav-' + view) || document.getElementById('nav-catalog');
+      if (navEl) navEl.classList.add('nav-item--active');
+
+      const container = document.getElementById('view-container');
+
+      if (view === 'catalog') {
+        renderCatalog(container);
+      } else if (view === 'component') {
+        const name = parts[1];
+        const tab = parts[2] || 'overview';
+        if (tab === 'api') {
+          renderApiView(container, name);
+        } else if (tab === 'adr') {
+          renderAdrView(container, name);
+        } else if (tab === 'docs') {
+          const docIndex = parts[3] ? parseInt(parts[3]) : 0;
+          renderDocsView(container, name, docIndex);
+        } else if (tab === 'graph') {
+          renderGraphView(container, name);
+        } else {
+          renderOverview(container, name);
+        }
+      } else if (view === 'apis') {
+        renderApis(container);
+      } else if (view === 'api') {
+        // Direct API view from the APIs table: api/{apiName}
+        renderApiViewByName(container, parts[1]);
+      } else if (view === 'techradar') {
+        renderTechRadar(container);
+      } else if (view === 'docs') {
+        renderDocsIndex(container);
+      } else {
+        container.innerHTML = '<p class="empty-state">Select a section from the navigation.</p>';
+      }
+    }
+
+    window.addEventListener('hashchange', router);
+    window.addEventListener('load', router);
+  </script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: core-fe
+  description: The fundamental core app of the system
+  tags:
+    - microfrontend
+  annotations:
+    github.com/project-slug: goafabric/core-fe
+    argocd/app-name: core-frontend
+    backstage.io/adr-location: https://github.com/goafabric/backstage/tree/develop/catalog/adr/core-fe
+  links:
+    - url: https://github.com/goafabric/core-fe
+      title: GitHub Repository
+    - url: https://v2202402203466256255.megasrv.de/core-fe/
+      title: Service URL
+
+
+spec:
+  type: service
+  lifecycle: production
+  owner: team-yellow
+  
+  consumesApis:
+    - core-api
+    - catalog-api
+  dependsOn:
+    - component:api-gateway
+#    - component:core-service
+#    - component:catalog-service
+

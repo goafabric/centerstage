@@ -1,0 +1,71 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: catalog-service
+  description: |
+    Catalog Application for ICD10, Coverages ...
+    
+    [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=org.goafabric%3Acatalog-batch-service&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=org.goafabric%3Acatalog-batch-service)
+    [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=org.goafabric%3Acatalog-batch-service&metric=coverage)](https://sonarcloud.io/summary/new_code?id=org.goafabric%3Acatalog-batch-service)
+    
+    [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=org.goafabric%3Acatalog-batch-service&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=org.goafabric%3Acatalog-batch-service)
+    [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=org.goafabric%3Acatalog-batch-service&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=org.goafabric%3Acatalog-batch-service)
+    [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=org.goafabric%3Acatalog-batch-service&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=org.goafabric%3Acatalog-batch-service)
+  tags:
+    - spring-boot
+    - batch
+  annotations:
+    github.com/project-slug: goafabric/catalog-batch-service
+    github.com/actions: goafabric/catalog-batch-service
+    argocd/app-name: catalog-application
+    backstage.io/adr-location: https://github.com/goafabric/backstage/tree/develop/catalog/adr/catalog-service/
+  #  kiali.io/provider: default
+  #  kiali.io/namespace: core
+  links:
+    - url: https://github.com/goafabric/catalog-service
+      title: GitHub Repository
+    - url: https://v2202402203466256255.megasrv.de/catalog/
+      title: Service URL
+
+spec:
+  type: service
+  lifecycle: production
+  owner: team-blue
+  providesApis:
+    - catalog-api
+  dependsOn:
+    - resource:catalog-db
+  dependencyOf:
+    - component:api-gateway
+
+---
+
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: catalog-api
+  description: OpenAPI definition for Core Service.
+  tags:
+    - openapi
+    - catalog-service
+spec:
+  type: openapi
+  lifecycle: production
+  owner: team-blue
+  definition:
+    $text: https://github.com/goafabric/catalog-batch-service/blob/develop/doc/generated/openapi.json
+
+---
+
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: catalog-db
+  annotations:
+    backstage.io/database: "postgres"
+    postgres.instance: "my-postgres-cluster"
+    postgres.database: "catalog"
+spec:
+  type: database
+  owner: devops
+

@@ -1,0 +1,57 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: event-dispatcher-service
+  description: |
+    Event Dispatcher with Kafka
+    
+    [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=org.goafabric%3Aevent-dispatcher-service&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=org.goafabric%3Aevent-dispatcher-service)
+    [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=org.goafabric%3Aevent-dispatcher-service&metric=coverage)](https://sonarcloud.io/summary/new_code?id=org.goafabric%3Aevent-dispatcher-service)
+
+    [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=org.goafabric%3Aevent-dispatcher-service&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=org.goafabric%3Aevent-dispatcher-service)
+    [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=org.goafabric%3Aevent-dispatcher-service&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=org.goafabric%3Aevent-dispatcher-service)
+    [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=org.goafabric%3Aevent-dispatcher-service&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=org.goafabric%3Aevent-dispatcher-service)    
+  tags:
+    - spring-boot
+    - batch
+  annotations:
+    github.com/project-slug: goafabric/catalog-batch-service
+    github.com/actions: goafabric/catalog-batch-service
+    argocd/app-name: event-dispatcher-service-application
+    backstage.io/adr-location: https://github.com/goafabric/backstage/tree/develop/catalog/adr/event-dispatcher-service
+  links:
+    - url: https://github.com/goafabric/event-dispatcher-service
+      title: GitHub Repository
+
+spec:
+  type: service
+  lifecycle: production
+  owner: team-blue
+  providesApis:
+    - event-dispatcher-api
+  consumesApis:
+    - organization-topic
+    - practitioner-topic
+  dependsOn:
+    - resource:kafka
+  dependencyOf:
+    - component:api-gateway
+
+
+---
+
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: event-dispatcher-api
+  description: OpenAPI definition for Core Service.
+  tags:
+    - openapi
+    - event-dispatcher-service
+spec:
+  type: openapi
+  lifecycle: production
+  owner: team-blue
+  definition:
+    $text: https://github.com/goafabric/event-dispatcher-service/blob/develop/doc/generated/openapi.json
+

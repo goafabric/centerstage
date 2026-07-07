@@ -1,0 +1,19 @@
+apiVersion: backstage.io/v1alpha1
+kind: Location
+metadata:
+  name: goafabric-services
+  description: Collection of goafabric services
+spec:
+  type: url
+  targets:
+#    - https://github.com/goafabric/callee-service/blob/develop/catalog-info.yaml
+    - https://github.com/goafabric/person-service/blob/develop/catalog-info.yaml
+
+    - https://github.com/goafabric/core-fe/blob/develop/catalog-info.yaml
+    - https://github.com/goafabric/core-service/blob/develop/catalog-info.yaml
+    - https://github.com/goafabric/catalog-service/blob/develop/catalog-info.yaml
+    - https://github.com/goafabric/invoice-process/blob/develop/catalog-info.yaml
+    - https://github.com/goafabric/event-dispatcher-service/blob/develop/catalog-info.yaml
+
+    - https://github.com/goafabric/backstage/blob/develop/catalog/guidelines/catalog-info.yaml
+    

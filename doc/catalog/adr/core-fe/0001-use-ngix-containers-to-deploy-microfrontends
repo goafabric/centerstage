@@ -1,0 +1,26 @@
+# Use Nginx Containers to deploy Micro Frontends
+
+* Status: decided
+* Deciders: Andreas Mautsch
+* Date: 2025-05-01
+
+## Context
+
+To deploy Microfrontends we need a possible solution.
+
+## Decision
+
+The decision is to deploy an Nginx Container with the Javascript Code, per Frontend.
+This will provide. easy and fast deployments.
+
+## Consequences
+
+There needs to be a build process that takes care of it.
+Also the Frontend needs to be able to work with different versions of the backend,
+using semantic versioning.
+
+## Possible Alternatives
+
+A possible alternative would be, to bundle the javascript code as part of the Backend Services.
+But this would couple the deployment of backend and frontends, with all positive and negative consequences.
+

@@ -1,0 +1,54 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: invoice-process
+  description: |
+    A process for invoices
+    
+    [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=org.goafabric%3Ainvoice-process&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=org.goafabric%3Ainvoice-process)
+    [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=org.goafabric%3Ainvoice-process&metric=coverage)](https://sonarcloud.io/summary/new_code?id=org.goafabric%3Ainvoice-process)
+
+    [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=org.goafabric%3Ainvoice-process&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=org.goafabric%3Ainvoice-process)
+    [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=org.goafabric%3Ainvoice-process&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=org.goafabric%3Ainvoice-process)
+    [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=org.goafabric%3Ainvoice-process&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=org.goafabric%3Ainvoice-process)
+  tags:
+    - process
+  annotations:
+    github.com/project-slug: goafabric/invoice-process
+    github.com/actions: goafabric/invoice-process
+    argocd/app-name: invoice-process-application
+    backstage.io/adr-location: https://github.com/goafabric/backstage/tree/develop/catalog/adr/invoice-process
+  links:
+    - url: https://github.com/goafabric/invoice-process
+      title: GitHub Repository
+
+spec:
+  type: service
+  lifecycle: production
+  owner: team-blue
+  
+  providesApis:
+    - invoice-api
+  dependsOn:
+    - component:core-service
+    - component:catalog-service
+    - resource:kafka
+  dependencyOf:
+    - component:api-gateway
+
+---
+
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: invoice-api
+  description: OpenAPI definition for Core Service.
+  tags:
+    - openapi
+    - invoice-process
+spec:
+  type: openapi
+  lifecycle: production
+  owner: team-blue
+  definition:
+    $text: https://github.com/goafabric/invoice-process/blob/develop/doc/generated/openapi.json

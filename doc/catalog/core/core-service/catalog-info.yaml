@@ -1,0 +1,114 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: core-service
+  description: |
+    Core Service responsible for core application logic
+    
+    [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=org.goafabric%3Acore-service&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=org.goafabric%3Acore-service)
+    [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=org.goafabric%3Acore-service&metric=coverage)](https://sonarcloud.io/summary/new_code?id=org.goafabric%3Acore-service)
+    
+    [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=org.goafabric%3Acore-service&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=org.goafabric%3Acore-service)
+    [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=org.goafabric%3Acore-service&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=org.goafabric%3Acore-service)
+    [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=org.goafabric%3Acore-service&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=org.goafabric%3Acore-service)    
+  tags:
+    - spring-boot
+    - microservice
+  annotations:
+    github.com/project-slug: goafabric/core-service
+    github.com/actions: goafabric/core-service
+    argocd/app-name: core-application
+    backstage.io/adr-location: https://github.com/goafabric/backstage/tree/develop/catalog/adr/core-service
+#    kiali.io/provider: default
+#    kiali.io/namespace: core
+  links:
+    - url: https://github.com/goafabric/core-service
+      title: GitHub Repository
+    - url: https://v2202402203466256255.megasrv.de/core/
+      title: Service URL
+
+spec:
+  type: service
+  lifecycle: production
+  owner: team-blue
+  providesApis:
+    - core-api
+    - organization-topic
+  dependsOn:
+    - resource:core-db
+    - resource:kafka
+  dependencyOf:
+    - component:api-gateway
+
+---
+
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: core-api
+  description: OpenAPI definition for Core Service.
+  tags:
+    - openapi
+    - core-service
+spec:
+  type: openapi
+  lifecycle: production
+  owner: team-blue
+  definition:
+    $text: https://github.com/goafabric/core-service/blob/develop/doc/generated/openapi.json
+
+
+---
+
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: organization-topic
+  description: Organization Topic
+  tags:
+    - kafka-topic
+    - core-service
+spec:
+  type: kafka-topic
+  lifecycle: production
+  owner: devops
+  definition: |
+    topic: organization
+    key: organization_id
+    EventData.operation: (CREATE | UPDATE | DELETE) 
+
+---
+
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: practitioner-topic
+  description: Practitioner Topic
+  tags:
+    - kafka-topic
+    - core-service
+spec:
+  type: kafka-topic
+  lifecycle: production
+  owner: devops
+  definition: |
+    topic: practitioner
+    key: practitioner_id
+    EventData.operation: (CREATE | UPDATE | DELETE) 
+
+---
+
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: core-db
+  annotations:
+    backstage.io/database: "postgres"
+    postgres.instance: "my-postgres-cluster"
+    postgres.database: "core"
+spec:
+  type: database
+  owner: devops
+
+
+

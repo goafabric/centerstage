@@ -1,0 +1,26 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: api-gateway
+  description: The API Gateway
+  tags:
+    - infrastructure
+  annotations:
+
+spec:
+  type: service
+  lifecycle: production
+  owner: devops
+
+---
+
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: kafka
+  annotations:
+    kafka.apache.org/cluster: "my-kafka-cluster"
+spec:
+  type: kafka
+  owner: devops
+

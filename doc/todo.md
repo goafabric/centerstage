@@ -1,0 +1,4 @@
+- mermaid in techdocs
+- persistence + full text search
+- llm integration
+- gitlab + token key
