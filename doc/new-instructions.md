@@ -61,3 +61,10 @@ and where possible prefer constructor injections over lateinit
 - the adapter package looks pretty rough after so many refactorings
 - please write a good bunch of unit tests for the adapter package first
 - then try to consolidate all the implicit requirements into 1 Service and 1 Adapter Class for Github and Gitlab each (so 4 at the end)
+
+# full search
+- can you now implement a full search icon in the frontend at the top
+- when starting to type it should search inside adr/docs/component itself
+- should then show a list of results so 2 lines max
+- and then via click we could jump to the component/overview, component/adr, component/doc
+- and for api to the specific api overview 
