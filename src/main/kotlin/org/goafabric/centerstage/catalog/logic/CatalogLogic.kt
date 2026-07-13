@@ -4,22 +4,15 @@ import jakarta.enterprise.context.ApplicationScoped
 import org.goafabric.centerstage.catalog.adapter.GitHubService
 import org.goafabric.centerstage.catalog.adapter.GitLabService
 import org.goafabric.centerstage.catalog.adapter.RemoteContentService
-import org.goafabric.centerstage.catalog.controller.dto.Adr
-import org.goafabric.centerstage.catalog.controller.dto.Api
-import org.goafabric.centerstage.catalog.controller.dto.Component
-import org.goafabric.centerstage.catalog.controller.dto.Graph
-import org.goafabric.centerstage.catalog.controller.dto.GraphEdge
-import org.goafabric.centerstage.catalog.controller.dto.GraphNode
-import org.goafabric.centerstage.catalog.controller.dto.TechDoc
+import org.goafabric.centerstage.catalog.controller.dto.*
 import org.goafabric.centerstage.catalog.logic.mapper.CatalogMapper
-import org.goafabric.centerstage.catalog.persistence.CatalogLoader
 import org.goafabric.centerstage.catalog.persistence.entity.AdrFileEo
 import org.goafabric.centerstage.catalog.persistence.entity.CatalogEo
 import java.io.File
 
 @ApplicationScoped
 class CatalogLogic(
-    val catalogLoader: CatalogLoader,
+    val catalogLoaderLogic: CatalogLoaderLogic,
     val catalogMapper: CatalogMapper,
     val gitHubService: GitHubService,
     val gitLabService: GitLabService,
@@ -27,41 +20,41 @@ class CatalogLogic(
 ) {
 
     fun getAllApis(): List<Api> =
-        catalogLoader.entries
+        catalogLoaderLogic.entries
             .filter { it.kind == "API" }
             .map { catalogMapper.toApi(it) }
 
     fun getComponents(): List<Component> =
-        catalogLoader.entries
+        catalogLoaderLogic.entries
             .filter { it.kind == "Component" }
             .map { catalogMapper.toComponent(it) }
 
     fun getComponent(name: String): Component =
-        catalogLoader.entries
+        catalogLoaderLogic.entries
             .filter { it.kind == "Component" }
             .firstOrNull { it.metadata.name == name }
             ?.let { catalogMapper.toComponent(it) }
             ?: throw NoSuchElementException("Component not found: $name")
 
     fun getApis(componentName: String): List<Api> {
-        val component = catalogLoader.entries
+        val component = catalogLoaderLogic.entries
             .filter { it.kind == "Component" }
             .firstOrNull { it.metadata.name == componentName }
             ?: throw NoSuchElementException("Component not found: $componentName")
 
         val apiNames = component.spec.providesApis
-        return catalogLoader.entries
+        return catalogLoaderLogic.entries
             .filter { it.kind == "API" && it.metadata.name in apiNames }
             .map { catalogMapper.toApi(it) }
     }
 
     fun getGraph(componentName: String): Graph {
-        val focus = catalogLoader.entries
+        val focus = catalogLoaderLogic.entries
             .filter { it.kind == "Component" }
             .firstOrNull { it.metadata.name == componentName }
             ?: throw NoSuchElementException("Component not found: $componentName")
 
-        val allEntries = catalogLoader.entries
+        val allEntries = catalogLoaderLogic.entries
         val nodes = mutableMapOf<String, GraphNode>()
         val edges = mutableListOf<GraphEdge>()
         var edgeCounter = 0
@@ -138,7 +131,7 @@ class CatalogLogic(
     }
 
     fun getAdrs(componentName: String): List<Adr> {
-        val component = catalogLoader.entries
+        val component = catalogLoaderLogic.entries
             .filter { it.kind == "Component" }
             .firstOrNull { it.metadata.name == componentName }
             ?: throw NoSuchElementException("Component not found: $componentName")
@@ -156,7 +149,7 @@ class CatalogLogic(
         }
 
         // Local fallback: only works when catalog is loaded from local filesystem
-        val catalogFile = catalogLoader.catalogFile
+        val catalogFile = catalogLoaderLogic.catalogFile
         if (catalogFile.startsWith("http://") || catalogFile.startsWith("https://")) return emptyList()
         val catalogDir = resolveDir(File(catalogFile))
         val candidates = buildList {
@@ -174,7 +167,7 @@ class CatalogLogic(
     }
 
     fun getDocs(componentName: String): List<TechDoc> {
-        val component = catalogLoader.entries
+        val component = catalogLoaderLogic.entries
             .filter { it.kind == "Component" }
             .firstOrNull { it.metadata.name == componentName }
             ?: throw NoSuchElementException("Component not found: $componentName")
@@ -226,7 +219,7 @@ class CatalogLogic(
     }
 
     fun getApiSpecByName(apiName: String): String {
-        val api = catalogLoader.entries
+        val api = catalogLoaderLogic.entries
             .filter { it.kind == "API" }
             .firstOrNull { it.metadata.name == apiName }
             ?: throw NoSuchElementException("API not found: $apiName")
@@ -236,7 +229,7 @@ class CatalogLogic(
     }
 
     fun getDocsAssetFile(componentName: String, assetPath: String): File? {
-        val component = catalogLoader.entries
+        val component = catalogLoaderLogic.entries
             .filter { it.kind == "Component" }
             .firstOrNull { it.metadata.name == componentName }
             ?: return null
@@ -257,7 +250,7 @@ class CatalogLogic(
     private fun parseMkDocsNav(mkdocsFile: File): List<Pair<String, String>> {
         if (!mkdocsFile.exists()) return emptyList()
         return try {
-            val yaml = catalogLoader.yamlMapper.readValue(mkdocsFile, Map::class.java)
+            val yaml = catalogLoaderLogic.yamlMapper.readValue(mkdocsFile, Map::class.java)
             val nav = yaml["nav"] as? List<*> ?: return emptyList()
             nav.mapNotNull { entry ->
                 val map = entry as? Map<*, *> ?: return@mapNotNull null

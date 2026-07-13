@@ -1,4 +1,4 @@
-package org.goafabric.centerstage.catalog.persistence
+package org.goafabric.centerstage.catalog.logic
 
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -9,16 +9,15 @@ import jakarta.enterprise.context.ApplicationScoped
 import jakarta.enterprise.event.Observes
 import org.eclipse.microprofile.config.inject.ConfigProperty
 import org.goafabric.centerstage.catalog.adapter.RemoteContentService
-import org.goafabric.centerstage.catalog.persistence.entity.CatalogEo
-import org.goafabric.centerstage.catalog.persistence.entity.DefinitionEo
-import org.goafabric.centerstage.catalog.persistence.entity.LinkEo
-import org.goafabric.centerstage.catalog.persistence.entity.MetadataEo
-import org.goafabric.centerstage.catalog.persistence.entity.SpecEo
+import org.goafabric.centerstage.catalog.persistence.entity.*
 import org.slf4j.LoggerFactory
 import java.io.File
+import java.net.URLDecoder
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 
 @ApplicationScoped
-class CatalogLoader(
+class CatalogLoaderLogic(
     val remoteContentService: RemoteContentService
 ) {
 
@@ -111,11 +110,11 @@ class CatalogLoader(
                 val refSuffix  = match.groupValues[3]   // "/raw?ref=develop"
                 // Decode the encoded catalog file path to get its directory
                 val encodedCatalogPath = match.groupValues[2]  // e.g. "some%2Fpath%2Fcatalog-info.yaml"
-                val catalogFilePath = java.net.URLDecoder.decode(encodedCatalogPath, java.nio.charset.StandardCharsets.UTF_8)
+                val catalogFilePath = URLDecoder.decode(encodedCatalogPath, StandardCharsets.UTF_8)
                 val catalogDir = if (catalogFilePath.contains("/")) catalogFilePath.substringBeforeLast("/") else ""
                 val relPath = text.removePrefix("./")
                 val resolvedPath = if (catalogDir.isEmpty()) relPath else "$catalogDir/$relPath"
-                val encodedPath = java.net.URLEncoder.encode(resolvedPath, java.nio.charset.StandardCharsets.UTF_8)
+                val encodedPath = URLEncoder.encode(resolvedPath, StandardCharsets.UTF_8)
                 return "$apiBase$encodedPath$refSuffix"
             }
             // GitHub / other remote: resolve relative to the directory of the source URL

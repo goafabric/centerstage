@@ -5,7 +5,6 @@ import io.quarkus.test.junit.QuarkusTest
 import jakarta.inject.Inject
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
-import org.goafabric.centerstage.catalog.persistence.CatalogLoader
 import org.goafabric.centerstage.catalog.persistence.entity.CatalogEo
 import org.goafabric.centerstage.catalog.persistence.entity.MetadataEo
 import org.goafabric.centerstage.catalog.persistence.entity.SpecEo
@@ -20,7 +19,7 @@ class CatalogLogicTest {
     lateinit var catalogLogic: CatalogLogic
 
     @InjectMock
-    lateinit var catalogLoader: CatalogLoader
+    lateinit var catalogLoaderLogic: CatalogLoaderLogic
 
     private val sampleComponent = CatalogEo(
         kind = "Component",
@@ -47,7 +46,7 @@ class CatalogLogicTest {
 
     @BeforeEach
     fun setup() {
-        doReturn(mutableListOf(sampleComponent, sampleApi)).`when`(catalogLoader).entries
+        doReturn(mutableListOf(sampleComponent, sampleApi)).`when`(catalogLoaderLogic).entries
     }
 
     @Test
