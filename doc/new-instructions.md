@@ -67,4 +67,9 @@ and where possible prefer constructor injections over lateinit
 - when starting to type it should search inside adr/docs/component itself
 - should then show a list of results so 2 lines max
 - and then via click we could jump to the component/overview, component/adr, component/doc
-- and for api to the specific api overview 
+- and for api to the specific api overview
+
+# adr view
+- please add a new entry "ADR" to the sidebar, under "APIs"
+- when clicking it should open the the right all ADRs in Structure, that list all the components and when clicked one component, it should show a similar view like in the components, so the ADR and the content to the right again 
+- filtering should also be possible
