@@ -11,13 +11,10 @@ import java.nio.charset.StandardCharsets
 
 @ApplicationScoped
 class GitLabService(
-    @RestClient val gitLabAdapter: GitLabAdapter,
-    @ConfigProperty(name = "gitlab.token", defaultValue = "") val configToken: String
+    @param:RestClient val gitLabAdapter: GitLabAdapter,
+    @param:ConfigProperty(name = "gitlab.token", defaultValue = "") val token: String
 ) {
     private val log = LoggerFactory.getLogger(this.javaClass)
-
-    private val token: String
-        get() = configToken.ifBlank { System.getenv("GITLAB_TOKEN") ?: "" }
 
     /**
      * Given a GitLab tree URL like:
