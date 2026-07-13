@@ -33,4 +33,15 @@
 - they can be included optionally by "catalog-info.yaml"
 - please have another registercard "DOCS" in the Components View, that can display these
 - in the the sidebar to the lef wie already have "Docs", here similar to the other sidebar actions all docs should be listed and viewed upon click
--
+
+# persistence
+- we now need to have persistence, for general details please see "./doc/example.zip"
+- we will need PanacheRepository.Managed, as well a lot of persistence dependencies you will find in the build.gradle.kts in example.zip
+- we also need flyway, and we start with a JDBC via H2 like in the example
+- we need persistence for ADR, All Catalog Metadata, and maybe the Docs, you partly already created entities for that
+- for the entities we need matching PanacheRepository.Managed
+- the data also needs to be full text searchable in a second step, for that its enough to do this with a simple "LIKE" query at the beginning
+- but consider this in your possible data design
+- The data should be ingested always at application startup
+- And it should be ingested scheduled every n minutes, please make that n configurable in application properties
+- IN spring we would use @SCheduled, i am pretty sure quarkus has something similar
