@@ -4,8 +4,11 @@ import org.goafabric.centerstage.catalog.controller.dto.Adr
 import org.goafabric.centerstage.catalog.controller.dto.Api
 import org.goafabric.centerstage.catalog.controller.dto.Component
 import org.goafabric.centerstage.catalog.controller.dto.Link
+import org.goafabric.centerstage.catalog.controller.dto.TechDoc
+import org.goafabric.centerstage.catalog.persistence.entity.AdrEo
 import org.goafabric.centerstage.catalog.persistence.entity.AdrFileEo
 import org.goafabric.centerstage.catalog.persistence.entity.CatalogEo
+import org.goafabric.centerstage.catalog.persistence.entity.DocEo
 import org.mapstruct.Mapper
 import org.mapstruct.Mapping
 import org.mapstruct.ReportingPolicy
@@ -34,4 +37,8 @@ interface CatalogMapper {
     fun toLink(eo: org.goafabric.centerstage.catalog.persistence.entity.LinkEo): Link
 
     fun toAdr(eo: AdrFileEo): Adr
+
+    fun toAdr(eo: AdrEo): Adr
+
+    fun toTechDoc(eo: DocEo): TechDoc
 }

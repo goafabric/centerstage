@@ -1,51 +1,52 @@
 package org.goafabric.centerstage.catalog.logic
 
 import jakarta.enterprise.context.ApplicationScoped
+import jakarta.inject.Inject
 import org.goafabric.centerstage.catalog.adapter.GitHubService
 import org.goafabric.centerstage.catalog.adapter.GitLabService
 import org.goafabric.centerstage.catalog.adapter.RemoteContentService
 import org.goafabric.centerstage.catalog.controller.dto.TechDoc
+import org.goafabric.centerstage.catalog.logic.mapper.CatalogMapper
+import org.goafabric.centerstage.catalog.persistence.entity.ComponentEo
+import org.goafabric.centerstage.catalog.persistence.entity.DocEo
+import org.goafabric.centerstage.catalog.persistence.mapper.PersistenceMapper
 import java.io.File
 
 @ApplicationScoped
 class DocsLogic(
+    val persistenceMapper: PersistenceMapper,
     val catalogLoaderLogic: CatalogLoaderLogic,
+    val catalogMapper: CatalogMapper,
     val gitHubService: GitHubService,
     val gitLabService: GitLabService,
     val remoteContentService: RemoteContentService
 ) {
+    @Inject lateinit var componentRepo: ComponentEo.Repo
+    @Inject lateinit var docRepo: DocEo.Repo
 
     fun getDocs(componentName: String): List<TechDoc> {
-        val component = catalogLoaderLogic.entries
-            .filter { it.kind == "Component" }
-            .firstOrNull { it.metadata.name == componentName }
+        val persisted = docRepo.findByComponentName(componentName)
+        if (persisted.isNotEmpty()) return persisted.map { catalogMapper.toTechDoc(it) }
+
+        val component = componentRepo.findByKindAndName("Component", componentName).firstOrNull()
+            ?.let { persistenceMapper.toCatalogEo(it) }
             ?: throw NoSuchElementException("Component not found: $componentName")
 
-        val techDocsRef = component.metadata.annotations["backstage.io/techdocs-ref"]
-            ?: return emptyList()
-
+        val techDocsRef = component.metadata.annotations["backstage.io/techdocs-ref"] ?: return emptyList()
         val sourcePath = component.sourcePath ?: return emptyList()
 
-        // Remote: sourcePath is a raw.githubusercontent.com URL — fetch docs via GitHub API
-        if (sourcePath.startsWith("https://raw.githubusercontent.com")) {
+        if (sourcePath.startsWith("https://raw.githubusercontent.com"))
             return gitHubService.fetchDocs(sourcePath, techDocsRef)
-        }
-
-        // Remote: sourcePath is a GitLab URL (blob, raw, or API) — fetch docs via GitLab API
-        if (remoteContentService.isGitLabUrl(sourcePath)) {
+        if (remoteContentService.isGitLabUrl(sourcePath))
             return gitLabService.fetchDocs(sourcePath, techDocsRef)
-        }
 
-        // Local: resolve the docs/ directory relative to the catalog-info.yaml file
         val sourceFile = File(sourcePath)
         val refPath = techDocsRef.removePrefix("dir:").trim()
-        val docsRoot = if (refPath == ".") sourceFile.parentFile
-                       else File(sourceFile.parentFile, refPath)
+        val docsRoot = if (refPath == ".") sourceFile.parentFile else File(sourceFile.parentFile, refPath)
         val docsDir = File(docsRoot, "docs")
         if (!docsDir.exists() || !docsDir.isDirectory) return emptyList()
 
         val navOrder = parseMkDocsNav(File(docsRoot, "mkdocs.yml"))
-
         return if (navOrder.isNotEmpty()) {
             navOrder.mapNotNull { (title, filename) ->
                 val file = File(docsDir, filename)
@@ -60,9 +61,8 @@ class DocsLogic(
     }
 
     fun getDocsAssetFile(componentName: String, assetPath: String): File? {
-        val component = catalogLoaderLogic.entries
-            .filter { it.kind == "Component" }
-            .firstOrNull { it.metadata.name == componentName }
+        val component = componentRepo.findByKindAndName("Component", componentName).firstOrNull()
+            ?.let { persistenceMapper.toCatalogEo(it) }
             ?: return null
 
         val techDocsRef = component.metadata.annotations["backstage.io/techdocs-ref"] ?: return null

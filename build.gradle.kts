@@ -15,6 +15,7 @@ plugins {
 	id("org.sonarqube") version "7.3.1.8318"
 
 	kotlin("jvm") version "2.4.0"
+	kotlin("plugin.jpa") version "2.4.0"
 	kotlin("plugin.allopen") version "2.4.0"
 	kotlin("kapt") version "2.4.0"
 }
@@ -53,6 +54,14 @@ dependencies {
 
 	//crosscutting
 	implementation("io.quarkus:quarkus-hibernate-validator")
+
+	//persistence
+	implementation("io.quarkus:quarkus-data-hibernate")
+	implementation("io.quarkus:quarkus-jdbc-h2")
+	implementation("io.quarkus:quarkus-flyway")
+	implementation("io.quarkus:quarkus-scheduler")
+	kapt("org.hibernate.orm:hibernate-processor")
+	runtimeOnly("com.h2database:h2")
 
 	//yaml parsing
 	implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml")
@@ -124,6 +133,7 @@ configure<net.researchgate.release.ReleaseExtension> {
 allOpen {
 	annotation("jakarta.ws.rs.Path")
 	annotation("jakarta.enterprise.context.ApplicationScoped")
+	annotation("jakarta.persistence.Entity")
 	annotation("io.quarkus.test.junit.QuarkusTest")
 }
 

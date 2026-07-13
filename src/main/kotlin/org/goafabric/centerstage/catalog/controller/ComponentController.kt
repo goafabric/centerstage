@@ -6,17 +6,17 @@ import jakarta.ws.rs.PathParam
 import jakarta.ws.rs.Produces
 import jakarta.ws.rs.core.MediaType
 import org.goafabric.centerstage.catalog.controller.dto.Component
-import org.goafabric.centerstage.catalog.logic.CatalogLogic
+import org.goafabric.centerstage.catalog.logic.ComponentLogic
 
 @Path("/api/catalog")
 @Produces(MediaType.APPLICATION_JSON)
-class CatalogController(val catalogLogic: CatalogLogic) {
+class ComponentController(val componentLogic: ComponentLogic) {
 
     @GET
     @Path("/components")
-    fun getComponents(): List<Component> = catalogLogic.getComponents()
+    fun getComponents(): List<Component> = componentLogic.getComponents()
 
     @GET
     @Path("/components/{name}")
-    fun getComponent(@PathParam("name") name: String): Component = catalogLogic.getComponent(name)
+    fun getComponent(@PathParam("name") name: String): Component = componentLogic.getComponent(name)
 }

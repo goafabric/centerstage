@@ -8,7 +8,7 @@ import org.hamcrest.Matchers.notNullValue
 import org.junit.jupiter.api.Test
 
 @QuarkusTest
-class CatalogControllerIT {
+class ComponentControllerIT {
 
     @Test
     fun `GET components returns list`() {
