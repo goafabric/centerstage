@@ -3,7 +3,7 @@ package org.goafabric.centerstage.catalog.adapter
 import jakarta.enterprise.context.ApplicationScoped
 import org.eclipse.microprofile.rest.client.inject.RestClient
 import org.goafabric.centerstage.catalog.controller.dto.TechDoc
-import org.goafabric.centerstage.catalog.persistence.entity.AdrFileEo
+import org.goafabric.centerstage.catalog.persistence.entity.AdrEo
 import org.slf4j.LoggerFactory
 
 @ApplicationScoped
@@ -13,34 +13,23 @@ class GitHubService(
 ) {
     private val log = LoggerFactory.getLogger(this.javaClass)
 
-    /**
-     * Given a raw.githubusercontent.com catalog-info URL and a techdocs-ref like "dir:.",
-     * fetches all .md files from the resolved docs/ directory on GitHub.
-     * rawCatalogUrl example: https://raw.githubusercontent.com/goafabric/backstage/develop/catalog/guidelines/catalog-info.yaml
-     */
     fun fetchDocs(rawCatalogUrl: String, techDocsRef: String): List<TechDoc> {
         return try {
-            // https://raw.githubusercontent.com/{owner}/{repo}/{ref}/{path/to/catalog-info.yaml}
             val withoutScheme = rawCatalogUrl.removePrefix("https://raw.githubusercontent.com/").trimEnd('/')
             val parts = withoutScheme.split("/")
-            val owner = parts[0]
-            val repo  = parts[1]
-            val ref   = parts[2]
+            val owner = parts[0]; val repo = parts[1]; val ref = parts[2]
             val catalogPath = parts.drop(3).joinToString("/")
-
             val refPath = techDocsRef.removePrefix("dir:").trim().removePrefix("./").trimEnd('/')
             val catalogDir = if (catalogPath.contains("/")) catalogPath.substringBeforeLast("/") else ""
             val docsBase = if (catalogDir.isEmpty()) "" else "$catalogDir/"
             val docsPath = if (refPath == ".") "${docsBase}docs" else "${docsBase}${refPath}/docs"
 
-            val files = gitHubAdapter.listContents(owner, repo, docsPath, ref, "", "centerstage")
-            files
+            gitHubAdapter.listContents(owner, repo, docsPath, ref, "", "centerstage")
                 .filter { it.type == "file" && it.name.endsWith(".md") }
                 .sortedBy { it.name }
                 .mapNotNull { file ->
                     val downloadUrl = file.downloadUrl ?: return@mapNotNull null
-                    val content = remoteContentService.fetchText(downloadUrl)
-                    TechDoc(name = file.name.removeSuffix(".md"), content = content)
+                    TechDoc(name = file.name.removeSuffix(".md"), content = remoteContentService.fetchText(downloadUrl))
                 }
         } catch (e: Exception) {
             log.warn("Failed to fetch docs from GitHub ($rawCatalogUrl): ${e.message}")
@@ -48,22 +37,18 @@ class GitHubService(
         }
     }
 
-    /**
-     * Given a GitHub tree URL like:
-     *   https://github.com/goafabric/backstage/tree/develop/catalog/adr/catalog-service
-     * lists all .md files and returns their content as AdrFileEo list.
-     */
-    fun fetchAdrs(treeUrl: String): List<AdrFileEo> {
+    fun fetchAdrs(treeUrl: String): List<AdrEo> {
         return try {
             val (owner, repo, ref, path) = parseTreeUrl(treeUrl)
-            val files = gitHubAdapter.listContents(owner, repo, path, ref, "", "centerstage")
-            files
+            gitHubAdapter.listContents(owner, repo, path, ref, "", "centerstage")
                 .filter { it.type == "file" && it.name.endsWith(".md") }
                 .sortedBy { it.name }
                 .mapNotNull { file ->
                     val downloadUrl = file.downloadUrl ?: return@mapNotNull null
-                    val content = remoteContentService.fetchText(downloadUrl)
-                    AdrFileEo(name = file.name.removeSuffix(".md"), content = content)
+                    AdrEo().apply {
+                        name    = file.name.removeSuffix(".md")
+                        content = remoteContentService.fetchText(downloadUrl)
+                    }
                 }
         } catch (e: Exception) {
             log.warn("Failed to fetch ADRs from GitHub ($treeUrl): ${e.message}")
@@ -74,13 +59,8 @@ class GitHubService(
     private data class TreeParts(val owner: String, val repo: String, val ref: String, val path: String)
 
     private fun parseTreeUrl(url: String): TreeParts {
-        val withoutScheme = url.removePrefix("https://github.com/").trimEnd('/')
-        val parts = withoutScheme.split("/")
+        val parts = url.removePrefix("https://github.com/").trimEnd('/').split("/")
         require(parts.size >= 4 && parts[2] == "tree") { "Not a GitHub tree URL: $url" }
-        val owner = parts[0]
-        val repo  = parts[1]
-        val ref   = parts[3]
-        val path  = parts.drop(4).joinToString("/")
-        return TreeParts(owner, repo, ref, path)
+        return TreeParts(parts[0], parts[1], parts[3], parts.drop(4).joinToString("/"))
     }
 }

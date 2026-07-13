@@ -1,9 +1,6 @@
 package org.goafabric.centerstage.catalog.persistence.entity
 
 import io.quarkus.hibernate.panache.PanacheEntity
-import io.quarkus.hibernate.panache.PanacheRepository
-import jakarta.data.repository.Find
-import jakarta.data.repository.Query
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.Id
@@ -56,17 +53,11 @@ class ComponentEo : PanacheEntity.Managed {
     @Column(name = "search_text", columnDefinition = "TEXT")
     var searchText: String? = null
 
-    interface Repo : PanacheRepository.Managed<ComponentEo, String> {
+    /** Returns the value of a named annotation from the comma-separated key=value string. */
+    fun annotation(key: String): String? =
+        annotations?.split(",")?.firstOrNull { it.startsWith("$key=") }?.substringAfter("=")
 
-        @Find
-        fun findByKind(kind: String): List<ComponentEo>
-
-        @Query("from ComponentEo where kind = :kind and name = :name")
-        fun findByKindAndName(kind: String, name: String): List<ComponentEo>
-
-        @Query("from ComponentEo where searchText like :query")
-        fun search(query: String): List<ComponentEo>
-
-        fun save(eo: ComponentEo): ComponentEo = session.merge(eo)
-    }
+    /** Splits a comma-separated field into a list, filtering blanks. */
+    fun splitList(value: String?): List<String> =
+        value?.split(",")?.filter { it.isNotEmpty() } ?: emptyList()
 }

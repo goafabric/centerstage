@@ -5,6 +5,7 @@ import io.quarkus.test.junit.QuarkusTest
 import jakarta.inject.Inject
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.goafabric.centerstage.catalog.persistence.ComponentRepository
 import org.goafabric.centerstage.catalog.persistence.entity.ComponentEo
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -16,7 +17,7 @@ class ComponentLogicTest {
     @Inject lateinit var componentLogic: ComponentLogic
     @Inject lateinit var apiLogic: ApiLogic
 
-    @InjectMock lateinit var componentRepo: ComponentEo.Repo
+    @InjectMock lateinit var componentRepo: ComponentRepository
 
     private val componentEo = ComponentEo().apply {
         id           = "1"

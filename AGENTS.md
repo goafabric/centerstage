@@ -1,8 +1,8 @@
 # centerstage
 
 A Backstage-inspired developer portal built with Quarkus 3.37.0 + Kotlin + plain HTML/JS/CSS.
-It parses Backstage `catalog-info.yaml` files and renders a clean web UI for browsing components,
-APIs, architecture decision records, an interactive dependency graph, TechDocs, and a tech radar.
+It parses Backstage `catalog-info.yaml` files, persists the catalog to H2/PostgreSQL, and renders
+a web UI for browsing components, APIs, ADRs, an interactive dependency graph, TechDocs, and a tech radar.
 
 ---
 
@@ -23,12 +23,36 @@ APIs, architecture decision records, an interactive dependency graph, TechDocs, 
 | Property | Default | Description |
 |---|---|---|
 | `centerstage.catalog.file` | `doc/catalog/entities-local.yaml` | Entry-point catalog file (local path or GitLab/GitHub blob URL) |
+| `centerstage.ingestion.interval` | `PT30M` | ISO-8601 duration between scheduled re-ingestion runs |
 | `techradar.url` | *(GitHub JSON URL)* | URL to tech radar JSON (GitHub blob URL supported) |
-| `github.token` | *(empty)* | GitHub API token; falls back to `GITHUB_TOKEN` env var |
 | `gitlab.token` | *(empty)* | GitLab API token; falls back to `GITLAB_TOKEN` env var |
 | `quarkus.rest-client.GitHubAdapter.url` | `https://api.github.com` | GitHub REST client base URL |
 | `quarkus.rest-client.GitLabAdapter.url` | *(self-hosted host)* | GitLab REST client base URL |
+| `quarkus.datasource.db-kind` | `h2` | Database kind (`h2` dev/test, `postgresql` prod) |
 | `quarkus.http.port` | `50700` | HTTP port |
+
+---
+
+## Architecture
+
+Strictly layered by package. Each layer only accesses the layer below it.
+
+```
+controller        → REST endpoints, pure delegation to logic, builds Response
+controller/dto    → DTOs: simple names (Component, Api, Adr, TechDoc, Graph) — no Dto/Response suffix
+logic             → Business logic, constructor-injected; newspaper-method style (short public methods, named private helpers)
+logic/mapper      → MapStruct mappers (CatalogMapper): entity → DTO
+adapter           → Outbound HTTP (REST clients + service classes)
+persistence       → PanacheRepository.Managed interfaces (standalone files in persistence/)
+persistence/entity → JPA entities (@Entity, PanacheEntity.Managed) — one entity = one table
+```
+
+**Key rules from `doc/inst.md`:**
+- Repositories are based on `PanacheRepository.Managed` (not Jakarta Data `CrudRepository` — stateless session has limitations)
+- `jakarta.data` annotations (`@Find`, `@Query`) are allowed on repository methods
+- Prefer constructor injection; `@Inject lateinit var` only where unavoidable
+- Logic methods follow the newspaper metaphor: short top-level methods delegate to named private helpers
+- ArchUnit enforces layering: `persistence` must not access `logic` or `controller`
 
 ---
 
@@ -42,9 +66,15 @@ Application.kt                        @QuarkusMain entry point
 extensions/
   ExceptionHandler.kt                 Maps NoSuchElementException → 404, others → 500
 
-catalog/                              Domain package
+catalog/
   controller/
-    CatalogController.kt              REST @Path("/api/catalog") — all catalog endpoints
+    ComponentController.kt            GET /api/catalog/components, /components/{name}
+    ApiController.kt                  GET /api/catalog/apis, /apis/{name}/spec,
+                                        /components/{name}/apis, /components/{name}/api-spec
+    AdrController.kt                  GET /api/catalog/components/{name}/adrs
+    DocsController.kt                 GET /api/catalog/components/{name}/docs,
+                                        /components/{name}/docs/assets/{assetPath}
+    GraphController.kt                GET /api/catalog/components/{name}/graph
     dto/
       Component.kt                    name, owner, type, lifecycle, description, tags, links, annotations, providesApis
       Api.kt                          name, type, lifecycle, description, definitionUrl
@@ -53,49 +83,49 @@ catalog/                              Domain package
       Graph.kt                        Graph, GraphNode, GraphEdge
 
   logic/
-    CatalogLoaderLogic.kt             @ApplicationScoped — loads catalog on startup (@Observes StartupEvent):
-                                        reads entry-point YAML, resolves spec.targets[], parses all YAML docs
-                                        into CatalogEo list held in memory; resolves definition.$text URLs
-                                        (handles GitLab API URL format for relative paths)
-    CatalogLogic.kt                   Business logic: getComponents, getComponent, getAllApis, getApis,
-                                        getAdrs, getGraph, getDocs, getDocsAssetFile,
-                                        getApiSpec (proxy for component's OpenAPI),
-                                        getApiSpecByName (proxy for standalone API entry)
+    CatalogLoaderLogic.kt             Parses YAML into ComponentEo list (in-memory, not persisted here)
+                                        Resolves spec.targets[], definition.$text URLs, GitLab API URLs
+    CatalogIngestionLogic.kt          @Observes StartupEvent + @Scheduled: calls loader, persists
+                                        ComponentEo/AdrEo/DocEo; fetches ADRs + docs from GitHub/GitLab
+    ComponentLogic.kt                 getComponents(), getComponent()
+    ApiLogic.kt                       getAllApis(), getApis(), getApiSpec(), getApiSpecByName()
+    AdrLogic.kt                       getAdrs() — DB → remote (GitHub/GitLab) → local files fallback chain
+    DocsLogic.kt                      getDocs(), getDocsAssetFile() — same fallback chain
+    GraphLogic.kt                     getGraph() — focus node + one-hop neighbours from DB
     mapper/
-      CatalogMapper.kt                MapStruct mapper: CatalogEo → Component / Api / Adr / TechDoc
+      CatalogMapper.kt                MapStruct: ComponentEo→Component, ComponentEo→Api,
+                                        AdrEo→Adr, DocEo→TechDoc; @Named helpers for comma-split fields
 
   persistence/
+    ComponentRepository.kt            PanacheRepository.Managed<ComponentEo, String>
+                                        findByKind, findByKindAndName, search (LIKE on searchText)
+    AdrRepository.kt                  PanacheRepository.Managed<AdrEo, String>
+                                        findByComponentName, search
+    DocRepository.kt                  PanacheRepository.Managed<DocEo, String>
+                                        findByComponentName, search
     entity/
-      CatalogEo.kt                    kind, MetadataEo, SpecEo, sourcePath (absolute path of loaded catalog-info.yaml)
-      AdrFileEo.kt                    name, content (for local ADR markdown files)
-      MetadataEo.kt                   name, description, tags, annotations, links
-      SpecEo.kt                       type, lifecycle, owner, providesApis, dependsOn, dependencyOf, definition
-      DefinitionEo.kt                 text ($text field — resolved to raw fetchable URL at load time)
-      LinkEo.kt                       url, title
+      ComponentEo.kt                  All catalog kinds (Component, API, Resource) — flat columns,
+                                        comma-separated lists, annotation(key)/splitList() helpers
+      AdrEo.kt                        componentName, name, content, searchText
+      DocEo.kt                        componentName, name, content, searchText
 
   adapter/
     RemoteContentService.kt           Single outbound HTTP entry point:
-                                        toRawUrl()       — converts GitHub blob / GitLab blob URLs to raw/API URLs
-                                        gitLabBlobToApiUrl() — blob → GitLab API v4 raw file URL
-                                        isGitLabUrl()    — detects GitLab URLs (/-/ or /api/v4/)
-                                        fetchText()      — HTTP GET with PRIVATE-TOKEN header for GitLab
-                                        fetchTextOrNull() — same, returns null on failure
-    GitHubAdapter.kt                  @RegisterRestClient(configKey="GitHubAdapter") — GitHub Contents API
-                                        listContents(owner, repo, path, ref, token, userAgent)
-    GitHubService.kt                  fetchAdrs(treeUrl) — list + fetch .md files from GitHub tree URL
-                                        fetchDocs(rawCatalogUrl, techDocsRef) — fetch docs/ from GitHub
-    GitLabAdapter.kt                  @RegisterRestClient(configKey="GitLabAdapter") — GitLab API v4
-                                        listTree(projectId, path, ref, perPage, token) — uses @Encoded on {id}
-                                        getRawFile(projectId, filePath, ref, token)   — uses @Encoded on {id},{filePath}
-    GitLabService.kt                  fetchAdrs(treeUrl) — list + fetch .md from GitLab tree or blob URL
-                                        fetchDocs(catalogUrl, techDocsRef) — fetch docs/ from GitLab;
-                                          accepts /-/raw/, /-/blob/, and /api/v4/projects/…/files/…/raw URLs
-                                        parseTreeUrl() — parses /-/tree/ and /-/blob/ URLs
-                                        parseCatalogUrl() — parses raw, blob, and API URL formats
+                                        toRawUrl() — GitHub blob → raw, GitLab blob → API URL
+                                        isGitLabUrl() — detects /-/ or /api/v4/
+                                        fetchText() / fetchTextOrNull() — with PRIVATE-TOKEN for GitLab
+    GitHubAdapter.kt                  @RegisterRestClient — GitHub Contents API (listContents)
+    GitHubService.kt                  fetchAdrs(treeUrl) → List<AdrEo>
+                                        fetchDocs(rawCatalogUrl, techDocsRef) → List<TechDoc>
+    GitLabAdapter.kt                  @RegisterRestClient — GitLab API v4
+                                        listTree / getRawFile — @Encoded on {id} and {filePath}
+    GitLabService.kt                  fetchAdrs(treeUrl) → List<AdrEo>; accepts /-/tree/ and /-/blob/
+                                        fetchDocs(catalogUrl, techDocsRef) → List<TechDoc>
+                                        accepts /-/raw/, /-/blob/, /api/v4/…/raw?ref= URL formats
 
 techradar/
   controller/
-    TechRadarController.kt            REST @Path("/api/techradar") — fetches + proxies tech radar JSON
+    TechRadarController.kt            GET /api/techradar — proxies configured JSON URL
 ```
 
 ---
@@ -108,41 +138,53 @@ techradar/
 | GET | `/api/catalog/components/{name}` | Single component (404 if not found) |
 | GET | `/api/catalog/components/{name}/apis` | APIs provided by component |
 | GET | `/api/catalog/components/{name}/api-spec` | OpenAPI spec proxied server-side (JSON or YAML) |
-| GET | `/api/catalog/components/{name}/adrs` | ADRs (GitHub, GitLab, or local files) |
-| GET | `/api/catalog/components/{name}/docs` | TechDocs markdown pages |
-| GET | `/api/catalog/components/{name}/docs/assets/{assetPath}` | Static doc asset (image etc.) from local disk |
+| GET | `/api/catalog/components/{name}/adrs` | ADRs (DB → GitHub/GitLab → local fallback) |
+| GET | `/api/catalog/components/{name}/docs` | TechDocs pages (DB → GitHub/GitLab → local fallback) |
+| GET | `/api/catalog/components/{name}/docs/assets/{assetPath}` | Static doc asset from local disk |
 | GET | `/api/catalog/components/{name}/graph` | Dependency graph (focus node + direct neighbours) |
 | GET | `/api/catalog/apis` | All `kind: API` entries |
-| GET | `/api/catalog/apis/{name}/spec` | OpenAPI spec for a named API, proxied server-side |
+| GET | `/api/catalog/apis/{name}/spec` | OpenAPI spec for named API, proxied server-side |
 | GET | `/api/techradar` | Tech radar JSON (proxied from configured URL) |
+
+---
+
+## Persistence
+
+- **DB**: H2 in-memory (dev/test), PostgreSQL (prod)
+- **Schema**: managed by Flyway (`src/main/resources/db/migration/V1__create_catalog_tables.sql`)
+- **Tables**: `component_eo`, `adr_eo`, `doc_eo`
+- **Ingestion**: triggered at startup (`@Observes StartupEvent`) and on schedule (`@Scheduled`)
+- **Search**: `LIKE %query%` on the `search_text` column (pre-built at ingestion time)
+- `ComponentEo` stores all catalog kinds (Component, API, Resource) in one table; lists are comma-separated strings; `annotation(key)` / `splitList()` helpers on the entity
 
 ---
 
 ## Catalog Parsing
 
-- Entry point: `entities-local.yaml` (or a remote URL) — `kind: Location` with `spec.targets[]`
+- Entry point: configured YAML file — `kind: Location` with `spec.targets[]`
 - Each target: one or more YAML documents separated by `---`
-- `kind: Component` → components table, overview, graph
-- `kind: API` → APIs table, linked from components via `spec.providesApis`; `spec.definition.$text` resolved to a raw URL at load time
+- `kind: Component` → component table, overview, graph
+- `kind: API` → API table; `spec.definition.$text` resolved to a GitLab API raw URL at load time
 - `kind: Resource` → graph nodes only
-- Remote targets: GitHub blob and GitLab blob/raw URLs are normalised to fetchable raw/API URLs at load time
-- `spec.definition.$text` relative paths: resolved against the catalog-info.yaml's directory using the GitLab API URL structure (re-encodes path segments correctly)
+- Remote targets: GitHub blob and GitLab blob/raw URLs normalised to raw/API URLs at load time
 
-### ADR resolution order
-1. `annotations["backstage.io/adr-location"]` starts with `https://github.com` → GitHub Contents API
-2. `annotations["backstage.io/adr-location"]` is a GitLab URL (`/-/` or `/api/v4/`) → GitLab tree API (accepts `/-/tree/` and `/-/blob/` URLs)
-3. Local fallback: `doc/catalog/adr/{component-name}/` (only when catalog is a local file)
+### ADR resolution order (AdrLogic)
+1. DB — `adrRepo.findByComponentName()`
+2. `annotations["backstage.io/adr-location"]` starts with `https://github.com` → GitHub Contents API
+3. `annotations["backstage.io/adr-location"]` is a GitLab URL → GitLab tree API (`/-/tree/` or `/-/blob/`)
+4. Local fallback: `adr/{component-name}/` relative to catalog file (local catalog only)
 
-### TechDocs resolution order
-1. `sourcePath` is `raw.githubusercontent.com` → GitHub API (`gitHubService.fetchDocs`)
-2. `sourcePath` is a GitLab URL → GitLab API (`gitLabService.fetchDocs`); `techdocs-ref: dir:.` resolves `docs/` relative to catalog-info.yaml directory
-3. Local fallback: `docs/` directory next to catalog-info.yaml; nav order from `mkdocs.yml` if present
+### TechDocs resolution order (DocsLogic)
+1. DB — `docRepo.findByComponentName()`
+2. `sourcePath` is `raw.githubusercontent.com` → GitHub API
+3. `sourcePath` is a GitLab URL → GitLab API; `techdocs-ref: dir:.` resolves `docs/` relative to catalog-info.yaml
+4. Local fallback: `docs/` next to catalog-info.yaml; nav order from `mkdocs.yml` if present
 
 ### OpenAPI spec proxying
-- The `definitionUrl` on an API entry is a GitLab API URL requiring a `PRIVATE-TOKEN` header
-- The browser cannot send this header cross-origin, so two proxy endpoints fetch server-side:
-  - `/components/{name}/api-spec` — for component view (first openapi-typed API)
-  - `/apis/{name}/spec` — for standalone API view
+- `definitionUrl` requires `PRIVATE-TOKEN` — browser cannot send it cross-origin
+- Two server-side proxy endpoints:
+  - `/components/{name}/api-spec` — first openapi-typed API of the component
+  - `/apis/{name}/spec` — standalone API by name
 - Content-type auto-detected: JSON (`{`) or YAML
 
 ---
@@ -154,23 +196,21 @@ Single-page app with `window.location.hash` routing. No framework.
 | File | Route | Description |
 |---|---|---|
 | `index.html` | — | Layout (sidebar 20% / content 80%), router, nav |
-| `styles.css` | — | All styles — dark sidebar, cards, tables, tags, graph legend |
+| `styles.css` | — | All styles |
 | `components/catalog.js` | `#catalog` | Component table: NAME, OWNER, TYPE, LIFECYCLE, DESCRIPTION, TAGS |
-| `components/overview.js` | `#component/{name}` | Detail card + badge images; tabs: Overview / API / ADR / Docs / Graph |
-| `components/api-view.js` | `#component/{name}/api` | SwaggerUI (CDN) pointed at `/components/{name}/api-spec` proxy |
-| `components/adr.js` | `#component/{name}/adr` | Left nav + marked.js markdown rendering |
-| `components/docs.js` | `#component/{name}/docs` | TechDocs viewer: left nav + marked.js; image assets via `/docs/assets/` endpoint; also renders global Docs index |
+| `components/overview.js` | `#component/{name}` | Detail card; tabs: Overview / API / ADR / Docs / Graph |
+| `components/api-view.js` | `#component/{name}/api` | SwaggerUI (CDN) → `/components/{name}/api-spec` proxy |
+| `components/adr.js` | `#component/{name}/adr` | Left nav + marked.js markdown |
+| `components/docs.js` | `#component/{name}/docs` | TechDocs viewer + global Docs index; images via `/docs/assets/` |
 | `components/graph.js` | `#component/{name}/graph` | Cytoscape.js interactive dependency graph |
-| `components/apis.js` | `#apis` | All APIs table; clicking name opens SwaggerUI via `/apis/{name}/spec` proxy |
-| `plugins/techradar.js` | `#techradar` | Zalando radar.js + D3 v7 tech radar visualization |
+| `components/apis.js` | `#apis` | All APIs table; clicking name → SwaggerUI via `/apis/{name}/spec` |
+| `plugins/techradar.js` | `#techradar` | Zalando radar.js + D3 v7 tech radar |
 
-### Graph details
-- Node shapes: roundrectangle = component, cylinder = resource, diamond = API
-- Node colours: dark/purple = focus, blue = component, amber = resource, green = API
-- Edge colours: red = dependsOn, purple = dependencyOf, green = providesApis
-- Scope: focus node + direct neighbours only (one hop)
-- Click node → navigate to that component's overview
-- Click node → highlights neighbourhood, fades rest
+### Graph
+- Shapes: roundrectangle = component, cylinder = resource, diamond = API
+- Colours: dark/purple = focus, blue = component, amber = resource, green = API
+- Edges: red = dependsOn, purple = dependencyOf, green = providesApis
+- Scope: focus node + direct neighbours (one hop); click node → navigate to component
 
 ---
 
@@ -178,23 +218,30 @@ Single-page app with `window.location.hash` routing. No framework.
 
 | Class | Type | Coverage |
 |---|---|---|
-| `CatalogControllerIT` | Integration (`@QuarkusTest`) | GET /components, GET /components/{name}, 404, /apis, /adrs |
-| `CatalogLogicTest` | Unit (Mockito) | getComponents, getComponent, getComponent unknown, getApis, getApis unknown |
-| `ArchitectureTest` | ArchUnit | persistence → no logic/controller; logic (excl. mapper) → no controller layer classes |
+| `ComponentControllerIT` | Integration (`@QuarkusTest`) | GET /components, /components/{name}, 404, /apis, /adrs |
+| `ComponentLogicTest` | Unit (Mockito, mocks `ComponentRepository`) | getComponents, getComponent, 404, getApis, getApis 404 |
+| `CatalogRepositoryIT` | Integration (`@QuarkusTest`, `@Transactional`) | findByKind, findByKindAndName, search, ADR/Doc repo, CatalogMapper mapping |
+| `ArchitectureTest` | ArchUnit | persistence → no logic/controller; logic (excl. mapper) → no controller package |
+
+**Test profile** (`src/test/resources/application.properties`):
+- Uses GitHub catalog URL (not local files)
+- `quarkus.scheduler.enabled=false` — prevents ingestion scheduler from running during tests
 
 ---
 
 ## Key GitLab Integration Notes
 
-- **Double-encoding prevention**: `GitLabAdapter` uses `@Encoded` on `@PathParam("id")` and `@PathParam("filePath")` so the MicroProfile REST client does not re-encode already-encoded `%2F` separators in project IDs and file paths.
-- **URL normalisation**: All remote blob URLs are converted to GitLab API raw URLs at catalog load time via `RemoteContentService.toRawUrl()` / `gitLabBlobToApiUrl()`.
-- **ADR blob URLs**: `GitLabService.parseTreeUrl()` accepts both `/-/tree/` and `/-/blob/` path markers.
-- **TechDocs catalog URL formats**: `GitLabService.parseCatalogUrl()` accepts `/-/raw/`, `/-/blob/`, and `/api/v4/projects/{id}/repository/files/{path}/raw?ref={ref}`.
+- **Double-encoding prevention**: `GitLabAdapter` uses `@Encoded` on `@PathParam("id")` and `@PathParam("filePath")` so the REST client does not re-encode `%2F` separators
+- **URL normalisation**: All blob URLs → GitLab API raw URLs at load time via `RemoteContentService.toRawUrl()`
+- **ADR blob URLs**: `GitLabService.parseTreeUrl()` accepts both `/-/tree/` and `/-/blob/`
+- **TechDocs URL formats**: `GitLabService.parseCatalogUrl()` accepts `/-/raw/`, `/-/blob/`, and `/api/v4/projects/{id}/repository/files/{path}/raw?ref={ref}`
+- **Definition URL resolution**: relative `$text` paths under GitLab API URLs are decoded, re-pathed against the catalog directory, and re-encoded correctly
 
 ---
 
 ## Key Files for Session Resumption
 
-- `centerstage/AGENTS.md` — this file
-- `centerstage/doc/catalog/entities-local.yaml` — local catalog entry point (used in test profile)
-- `src/main/resources/application.properties` — all runtime config including GitLab/GitHub REST client URLs
+- `AGENTS.md` — this file
+- `doc/inst.md` — architectural requirements and conventions
+- `src/main/resources/application.properties` — all runtime config
+- `src/main/resources/db/migration/V1__create_catalog_tables.sql` — DB schema

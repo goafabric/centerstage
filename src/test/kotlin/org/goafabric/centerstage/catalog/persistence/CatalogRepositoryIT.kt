@@ -4,10 +4,13 @@ import io.quarkus.test.junit.QuarkusTest
 import jakarta.inject.Inject
 import jakarta.transaction.Transactional
 import org.assertj.core.api.Assertions.assertThat
+import org.goafabric.centerstage.catalog.logic.mapper.CatalogMapper
+import org.goafabric.centerstage.catalog.persistence.AdrRepository
+import org.goafabric.centerstage.catalog.persistence.ComponentRepository
+import org.goafabric.centerstage.catalog.persistence.DocRepository
 import org.goafabric.centerstage.catalog.persistence.entity.AdrEo
 import org.goafabric.centerstage.catalog.persistence.entity.ComponentEo
 import org.goafabric.centerstage.catalog.persistence.entity.DocEo
-import org.goafabric.centerstage.catalog.persistence.mapper.PersistenceMapper
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.util.UUID
@@ -15,10 +18,10 @@ import java.util.UUID
 @QuarkusTest
 class CatalogRepositoryIT {
 
-    @Inject lateinit var componentRepo: ComponentEo.Repo
-    @Inject lateinit var adrRepo: AdrEo.Repo
-    @Inject lateinit var docRepo: DocEo.Repo
-    @Inject lateinit var persistenceMapper: PersistenceMapper
+    @Inject lateinit var componentRepo: ComponentRepository
+    @Inject lateinit var adrRepo: AdrRepository
+    @Inject lateinit var docRepo: DocRepository
+    @Inject lateinit var catalogMapper: CatalogMapper
 
     @BeforeEach
     @Transactional
@@ -100,9 +103,7 @@ class CatalogRepositoryIT {
 
     @Test
     fun `search finds component by description`() {
-        val result = componentRepo.search("%Manages persons%")
-        assertThat(result).hasSize(1)
-        assertThat(result.first().name).isEqualTo("person-service")
+        assertThat(componentRepo.search("%Manages persons%")).hasSize(1)
     }
 
     @Test
@@ -111,20 +112,21 @@ class CatalogRepositoryIT {
     }
 
     @Test
-    fun `persistenceMapper maps ComponentEo to CatalogEo correctly`() {
+    fun `catalogMapper toComponent splits comma fields correctly`() {
         val eo = componentRepo.findByKindAndName("Component", "person-service").first()
-        val catalogEo = persistenceMapper.toCatalogEo(eo)
-        assertThat(catalogEo.metadata.name).isEqualTo("person-service")
-        assertThat(catalogEo.metadata.tags).containsExactly("java", "microservice")
-        assertThat(catalogEo.spec.owner).isEqualTo("team-alpha")
-        assertThat(catalogEo.spec.providesApis).containsExactly("person-api")
+        val dto = catalogMapper.toComponent(eo)
+        assertThat(dto.name).isEqualTo("person-service")
+        assertThat(dto.tags).containsExactly("java", "microservice")
+        assertThat(dto.owner).isEqualTo("team-alpha")
+        assertThat(dto.providesApis).containsExactly("person-api")
     }
 
     @Test
-    fun `persistenceMapper maps API definitionUrl to DefinitionEo`() {
-        val eo = componentRepo.findByKindAndName("API", "person-api").first()
-        val catalogEo = persistenceMapper.toCatalogEo(eo)
-        assertThat(catalogEo.spec.definition?.text).isEqualTo("https://example.com/openapi.json")
+    fun `catalogMapper toApi maps definitionUrl`() {
+        val eo = componentRepo.findByKind("API").first()
+        val dto = catalogMapper.toApi(eo)
+        assertThat(dto.name).isEqualTo("person-api")
+        assertThat(dto.definitionUrl).isEqualTo("https://example.com/openapi.json")
     }
 
     @Test
@@ -137,8 +139,7 @@ class CatalogRepositoryIT {
 
     @Test
     fun `adrRepo search finds by content`() {
-        val result = adrRepo.search("%decided%")
-        assertThat(result).hasSize(1)
+        assertThat(adrRepo.search("%decided%")).hasSize(1)
     }
 
     @Test
@@ -150,7 +151,6 @@ class CatalogRepositoryIT {
 
     @Test
     fun `docRepo search finds by content`() {
-        val result = docRepo.search("%documentation%")
-        assertThat(result).hasSize(1)
+        assertThat(docRepo.search("%documentation%")).hasSize(1)
     }
 }

@@ -6,39 +6,44 @@ import org.goafabric.centerstage.catalog.controller.dto.Component
 import org.goafabric.centerstage.catalog.controller.dto.Link
 import org.goafabric.centerstage.catalog.controller.dto.TechDoc
 import org.goafabric.centerstage.catalog.persistence.entity.AdrEo
-import org.goafabric.centerstage.catalog.persistence.entity.AdrFileEo
-import org.goafabric.centerstage.catalog.persistence.entity.CatalogEo
+import org.goafabric.centerstage.catalog.persistence.entity.ComponentEo
 import org.goafabric.centerstage.catalog.persistence.entity.DocEo
 import org.mapstruct.Mapper
 import org.mapstruct.Mapping
+import org.mapstruct.Named
 import org.mapstruct.ReportingPolicy
 
 @Mapper(componentModel = "cdi", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 interface CatalogMapper {
 
-    @Mapping(source = "metadata.name", target = "name")
-    @Mapping(source = "metadata.description", target = "description")
-    @Mapping(source = "metadata.tags", target = "tags")
-    @Mapping(source = "metadata.annotations", target = "annotations")
-    @Mapping(source = "metadata.links", target = "links")
-    @Mapping(source = "spec.owner", target = "owner")
-    @Mapping(source = "spec.type", target = "type")
-    @Mapping(source = "spec.lifecycle", target = "lifecycle")
-    @Mapping(source = "spec.providesApis", target = "providesApis")
-    fun toComponent(eo: CatalogEo): Component
+    @Mapping(source = "tags",         target = "tags",         qualifiedByName = ["splitList"])
+    @Mapping(source = "annotations",  target = "annotations",  qualifiedByName = ["splitMap"])
+    @Mapping(source = "links",        target = "links",        qualifiedByName = ["splitLinks"])
+    @Mapping(source = "providesApis", target = "providesApis", qualifiedByName = ["splitList"])
+    fun toComponent(eo: ComponentEo): Component
 
-    @Mapping(source = "metadata.name", target = "name")
-    @Mapping(source = "metadata.description", target = "description")
-    @Mapping(source = "spec.type", target = "type")
-    @Mapping(source = "spec.lifecycle", target = "lifecycle")
-    @Mapping(source = "spec.definition.text", target = "definitionUrl")
-    fun toApi(eo: CatalogEo): Api
-
-    fun toLink(eo: org.goafabric.centerstage.catalog.persistence.entity.LinkEo): Link
-
-    fun toAdr(eo: AdrFileEo): Adr
+    @Mapping(source = "definitionUrl", target = "definitionUrl")
+    fun toApi(eo: ComponentEo): Api
 
     fun toAdr(eo: AdrEo): Adr
 
     fun toTechDoc(eo: DocEo): TechDoc
+
+    @Named("splitList")
+    fun splitList(value: String?): List<String> =
+        value?.split(",")?.filter { it.isNotEmpty() } ?: emptyList()
+
+    @Named("splitMap")
+    fun splitMap(value: String?): Map<String, String> =
+        value?.split(",")
+            ?.filter { it.contains("=") }
+            ?.associate { it.substringBefore("=") to it.substringAfter("=") }
+            ?: emptyMap()
+
+    @Named("splitLinks")
+    fun splitLinks(value: String?): List<Link> =
+        value?.split(",")
+            ?.filter { it.contains("|") }
+            ?.map { Link(url = it.substringAfter("|"), title = it.substringBefore("|").ifEmpty { null }) }
+            ?: emptyList()
 }

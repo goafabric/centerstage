@@ -49,6 +49,13 @@
 - IN spring we would use @Scheduled, i am pretty sure quarkus has something similar
 - create matching tests also
 - for mapping use Mapstruct
+                     
+# newspaper metaphor
+and while you are at it, the logic classes have sometimes rather long methods
+can you clean them up by leveraging the "newspaper method"
+so methods with less LOC delegating to private methods with a meaningful name
+
+and where possible prefer constructor injections over lateinit
 
 # adapter cleanup
 - the adapter package looks pretty rough after so many refactorings
