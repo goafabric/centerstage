@@ -40,12 +40,15 @@
 - we also need flyway, and we start with a JDBC via H2 like in the example
 - we need persistence for ADR, All Catalog Metadata, and maybe the Docs, you partly already created entities for that
 - for the entities we need matching PanacheRepository.Managed
+- Persistence, contains the repositories, these must be based on the new "PanacheRepository.Managed", for details: https://quarkus.io/version/main/guides/quarkus-data-hibernate
 - the data also needs to be full text searchable in a second step, for that its enough to do this with a simple "LIKE" query at the beginning
 - but consider this in your possible data design
 - The data should be ingested always at application startup
 - And it should be ingested scheduled every n minutes, please make that n configurable in application properties
+
 - IN spring we would use @Scheduled, i am pretty sure quarkus has something similar
 - create matching tests also
+- for mapping use Mapstruct
 
 # adapter cleanup
 - the adapter package looks pretty rough after so many refactorings
