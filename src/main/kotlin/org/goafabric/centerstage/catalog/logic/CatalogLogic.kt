@@ -2,6 +2,7 @@ package org.goafabric.centerstage.catalog.logic
 
 import jakarta.enterprise.context.ApplicationScoped
 import org.goafabric.centerstage.catalog.adapter.GitHubService
+import org.goafabric.centerstage.catalog.adapter.GitLabService
 import org.goafabric.centerstage.catalog.controller.dto.Adr
 import org.goafabric.centerstage.catalog.controller.dto.Api
 import org.goafabric.centerstage.catalog.controller.dto.Component
@@ -19,7 +20,8 @@ import java.io.File
 class CatalogLogic(
     val catalogLoader: CatalogLoader,
     val catalogMapper: CatalogMapper,
-    val gitHubService: GitHubService
+    val gitHubService: GitHubService,
+    val gitLabService: GitLabService
 ) {
 
     fun getAllApis(): List<Api> =
@@ -146,6 +148,11 @@ class CatalogLogic(
             return gitHubService.fetchAdrs(adrLocation).map { catalogMapper.toAdr(it) }
         }
 
+        // Remote GitLab URL — fetch via API
+        if (adrLocation != null && isGitLabUrl(adrLocation)) {
+            return gitLabService.fetchAdrs(adrLocation).map { catalogMapper.toAdr(it) }
+        }
+
         // Local fallback: only works when catalog is loaded from local filesystem
         val catalogFile = catalogLoader.catalogFile
         if (catalogFile.startsWith("http://") || catalogFile.startsWith("https://")) return emptyList()
@@ -178,6 +185,11 @@ class CatalogLogic(
         // Remote: sourcePath is a raw.githubusercontent.com URL — fetch docs via GitHub API
         if (sourcePath.startsWith("https://raw.githubusercontent.com")) {
             return gitHubService.fetchDocs(sourcePath, techDocsRef)
+        }
+
+        // Remote: sourcePath is a GitLab raw URL — fetch docs via GitLab API
+        if (isGitLabUrl(sourcePath) && sourcePath.contains("/-/raw/")) {
+            return gitLabService.fetchDocs(sourcePath, techDocsRef)
         }
 
         // Local: resolve the docs/ directory relative to the catalog-info.yaml file
@@ -245,6 +257,13 @@ class CatalogLogic(
             ?.sortedBy { it.name }
             ?.map { catalogMapper.toAdr(AdrFileEo(name = it.nameWithoutExtension, content = it.readText())) }
             ?: emptyList()
+
+    /**
+     * Returns true for gitlab.com and self-hosted GitLab instances (any host containing "gitlab").
+     * Adjust the heuristic here if you use a custom self-hosted domain without "gitlab" in the name.
+     */
+    private fun isGitLabUrl(url: String): Boolean =
+        url.contains("gitlab.com") || (url.contains("/-/tree/") || url.contains("/-/raw/"))
 
     private fun resolveDir(catalogFile: File): File {
         val f = if (catalogFile.isAbsolute) catalogFile

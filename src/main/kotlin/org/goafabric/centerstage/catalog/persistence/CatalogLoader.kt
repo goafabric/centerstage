@@ -9,6 +9,7 @@ import jakarta.enterprise.context.ApplicationScoped
 import jakarta.enterprise.event.Observes
 import org.eclipse.microprofile.config.inject.ConfigProperty
 import org.goafabric.centerstage.catalog.persistence.entity.CatalogEo
+import java.net.HttpURLConnection
 import org.goafabric.centerstage.catalog.persistence.entity.DefinitionEo
 import org.goafabric.centerstage.catalog.persistence.entity.LinkEo
 import org.goafabric.centerstage.catalog.persistence.entity.MetadataEo
@@ -24,6 +25,12 @@ class CatalogLoader {
 
     @ConfigProperty(name = "centerstage.catalog.file", defaultValue = "doc/catalog/entities-local.yaml")
     lateinit var catalogFile: String
+
+    @ConfigProperty(name = "gitlab.token", defaultValue = "")
+    lateinit var gitlabTokenConfig: String
+
+    private val gitlabToken: String
+        get() = gitlabTokenConfig.ifBlank { System.getenv("GITLAB_TOKEN") ?: "" }
 
     val entries: MutableList<CatalogEo> = mutableListOf()
 
@@ -67,13 +74,20 @@ class CatalogLoader {
         log.info("Catalog loaded: ${entries.size} entries (${entries.count { it.kind == "Component" }} components)")
     }
 
-    /** Reads content from a local file path or an HTTP(S) URL (converting GitHub blob URLs to raw). */
+    /** Reads content from a local file path or an HTTP(S) URL (converting blob URLs to raw). */
     private fun readContent(path: String): String? {
         return if (path.startsWith("http://") || path.startsWith("https://")) {
             try {
                 val rawUrl = toRawUrl(path)
                 log.debug("Fetching: $rawUrl")
-                URI(rawUrl).toURL().readText()
+                val connection = URI(rawUrl).toURL().openConnection() as HttpURLConnection
+                connection.setRequestProperty("User-Agent", "centerstage")
+                // Pass GitLab token when fetching from a GitLab host
+                val token = gitlabToken
+                if (token.isNotBlank() && (rawUrl.contains("gitlab.com") || rawUrl.contains("/-/raw/"))) {
+                    connection.setRequestProperty("PRIVATE-TOKEN", token)
+                }
+                connection.inputStream.bufferedReader().readText()
             } catch (e: Exception) {
                 log.warn("Failed to fetch $path: ${e.message}")
                 null
@@ -97,11 +111,15 @@ class CatalogLoader {
         }
     }
 
-    /** Converts a GitHub blob URL to a raw.githubusercontent.com URL. */
-    private fun toRawUrl(url: String): String =
-        if (url.contains("github.com") && url.contains("/blob/"))
+    /** Converts a GitHub blob URL to a raw.githubusercontent.com URL, or a GitLab blob URL to a raw URL. */
+    private fun toRawUrl(url: String): String = when {
+        url.contains("github.com") && url.contains("/blob/") ->
             url.replace("https://github.com", "https://raw.githubusercontent.com").replace("/blob/", "/")
-        else url
+        // GitLab: https://gitlab.com/group/repo/-/blob/ref/path  →  /-/raw/ref/path
+        url.contains("/-/blob/") ->
+            url.replace("/-/blob/", "/-/raw/")
+        else -> url
+    }
 
     /**
      * Resolves a definition $text value:
