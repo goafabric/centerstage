@@ -44,4 +44,10 @@
 - but consider this in your possible data design
 - The data should be ingested always at application startup
 - And it should be ingested scheduled every n minutes, please make that n configurable in application properties
-- IN spring we would use @SCheduled, i am pretty sure quarkus has something similar
+- IN spring we would use @Scheduled, i am pretty sure quarkus has something similar
+- create matching tests also
+
+# adapter cleanup
+- the adapter package looks pretty rough after so many refactorings
+- please write a good bunch of unit tests for the adapter package first
+- then try to consolidate all the implicit requirements into 1 Service and 1 Adapter Class for Github and Gitlab each (so 4 at the end)
