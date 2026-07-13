@@ -25,12 +25,10 @@ function renderAdrsIndex(container, selectedComponent) {
     </div>
   `;
 
-  fetch('/api/catalog/components')
+  fetch('/api/catalog/adrs/components')
     .then(r => r.json())
-    .then(components => {
-      _adrsComponents = (components || [])
-        .filter(c => c.annotations && c.annotations['backstage.io/adr-location'])
-        .sort((a, b) => a.name.localeCompare(b.name));
+    .then(names => {
+      _adrsComponents = (names || []).map(name => ({ name }));
       renderAdrsComponentList(_adrsComponents);
       if (selectedComponent) selectAdrsComponent(selectedComponent);
     })

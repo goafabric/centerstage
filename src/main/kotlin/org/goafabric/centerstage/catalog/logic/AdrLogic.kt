@@ -15,6 +15,9 @@ class AdrLogic(
     val catalogMapper: CatalogMapper
 ) {
 
+    fun getComponentNamesWithAdrs(): List<String> =
+        adrRepo.findComponentNamesWithAdrs()
+
     fun getAdrs(componentName: String): List<Adr> =
         fromDatabase(componentName)
             ?: fromLocalFiles(componentName)

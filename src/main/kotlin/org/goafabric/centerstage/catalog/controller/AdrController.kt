@@ -13,6 +13,10 @@ import org.goafabric.centerstage.catalog.logic.AdrLogic
 class AdrController(val adrLogic: AdrLogic) {
 
     @GET
+    @Path("/adrs/components")
+    fun getComponentNamesWithAdrs(): List<String> = adrLogic.getComponentNamesWithAdrs()
+
+    @GET
     @Path("/components/{name}/adrs")
     fun getAdrs(@PathParam("name") name: String): List<Adr> = adrLogic.getAdrs(name)
 }
