@@ -24,9 +24,20 @@ function fetchAndRender(query) {
     .catch(() => closeSearch());
 }
 
+function positionDropdown() {
+  const input = document.getElementById('search-input');
+  const dd    = document.getElementById('search-dropdown');
+  if (!input || !dd) return;
+  const rect = input.getBoundingClientRect();
+  dd.style.top  = (rect.bottom + 6) + 'px';
+  dd.style.left = rect.left + 'px';
+}
+
 function renderDropdown(results) {
   const dd = document.getElementById('search-dropdown');
   if (!dd) return;
+
+  positionDropdown();
 
   if (!results || results.length === 0) {
     dd.innerHTML = '<div class="search-no-results">No results found</div>';
@@ -67,7 +78,7 @@ function navigateToResult(type, componentName, name) {
 
 // Close dropdown when clicking outside the search widget
 document.addEventListener('click', function(e) {
-  const wrap = document.querySelector('.search-wrap');
+  const wrap = document.querySelector('.sidebar-search-wrap');
   if (wrap && !wrap.contains(e.target)) closeSearch();
 });
 

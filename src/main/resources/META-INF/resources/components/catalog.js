@@ -1,11 +1,17 @@
 let catalogData = [];
-let catalogSort = { col: null, dir: 1 };
+let catalogFilter = '';
+let catalogSort = { col: 'name', dir: 1 };
 
 function renderCatalog(container) {
   container.innerHTML = `
-    <div class="page-header">
-      <div class="page-title">Catalog</div>
-      <div class="page-subtitle">All registered components</div>
+    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div>
+        <div class="page-title">Catalog</div>
+        <div class="page-subtitle">All registered components</div>
+      </div>
+      <input class="catalog-filter-input" type="text" placeholder="Filter components…"
+             oninput="catalogFilter=this.value; renderCatalogRows()"
+             autocomplete="off"/>
     </div>
     <div class="table-container">
       <table id="catalog-table">
@@ -58,14 +64,26 @@ function renderCatalog(container) {
 }
 
 function renderCatalogRows() {
-  const sorted = [...catalogData].sort((a, b) => {
-    if (!catalogSort.col) return 0;
+  const q = catalogFilter.toLowerCase();
+  const filtered = q
+    ? catalogData.filter(c =>
+        (c.name        || '').toLowerCase().includes(q) ||
+        (c.owner       || '').toLowerCase().includes(q) ||
+        (c.type        || '').toLowerCase().includes(q) ||
+        (c.description || '').toLowerCase().includes(q) ||
+        (c.tags        || []).some(t => t.toLowerCase().includes(q))
+      )
+    : catalogData;
+
+  const sorted = [...filtered].sort((a, b) => {
     const av = sortKey(a, catalogSort.col);
     const bv = sortKey(b, catalogSort.col);
     return av.localeCompare(bv) * catalogSort.dir;
   });
 
-  document.getElementById('catalog-tbody').innerHTML = sorted.map(c => `
+  document.getElementById('catalog-tbody').innerHTML = sorted.length === 0
+    ? '<tr><td colspan="6" class="empty-state">No components match the filter.</td></tr>'
+    : sorted.map(c => `
     <tr>
       <td class="col-nowrap col-name">
         <a class="component-link" onclick="navigate('component', '${c.name}')">

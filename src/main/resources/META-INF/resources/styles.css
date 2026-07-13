@@ -465,18 +465,10 @@ tbody tr:hover { background: #fafbff; }
   border-bottom: none;
 }
 
-/* ===== Topbar ===== */
-.topbar {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  margin-bottom: 24px;
-}
-
-/* ===== Search ===== */
-.search-wrap {
+/* ===== Sidebar search ===== */
+.sidebar-search-wrap {
   position: relative;
-  width: 360px;
+  margin: 12px 10px 4px;
 }
 
 .search-icon {
@@ -484,39 +476,57 @@ tbody tr:hover { background: #fafbff; }
   left: 10px;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 15px;
-  color: #9ca3af;
+  font-size: 14px;
+  color: #6b7280;
   pointer-events: none;
 }
 
-.search-input {
+.sidebar-search-input {
   width: 100%;
-  padding: 8px 12px 8px 34px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  padding: 8px 10px 8px 32px;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 7px;
   font-size: 13px;
-  background: #ffffff;
-  color: #1a1a2e;
+  background: rgba(255,255,255,0.08);
+  color: #e5e7eb;
   outline: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.sidebar-search-input::placeholder { color: #6b7280; }
+
+.sidebar-search-input:focus {
+  border-color: rgba(124,131,253,0.6);
+  background: rgba(255,255,255,0.12);
+}
+
+/* ===== Catalog filter input ===== */
+.catalog-filter-input {
+  padding: 7px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 7px;
+  font-size: 13px;
+  color: #1a1a2e;
+  background: #ffffff;
+  outline: none;
+  width: 240px;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
-.search-input:focus {
+.catalog-filter-input:focus {
   border-color: #7c83fd;
   box-shadow: 0 0 0 3px rgba(124,131,253,0.15);
 }
 
 .search-dropdown {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  right: 0;
+  position: fixed;
+  width: 380px;
   background: #ffffff;
   border: 1px solid #e5e7eb;
   border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.18);
   z-index: 1000;
-  max-height: 400px;
+  max-height: 420px;
   overflow-y: auto;
 }
 

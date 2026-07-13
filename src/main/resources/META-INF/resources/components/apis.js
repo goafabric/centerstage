@@ -1,8 +1,17 @@
+let apisData = [];
+let apisFilter = '';
+
 function renderApis(container) {
+  apisFilter = '';
   container.innerHTML = `
-    <div class="page-header">
-      <div class="page-title">APIs</div>
-      <div class="page-subtitle">All registered API definitions</div>
+    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div>
+        <div class="page-title">APIs</div>
+        <div class="page-subtitle">All registered API definitions</div>
+      </div>
+      <input class="catalog-filter-input" type="text" placeholder="Filter APIs…"
+             oninput="apisFilter=this.value; renderApisRows()"
+             autocomplete="off"/>
     </div>
     <div class="table-container">
       <table>
@@ -26,31 +35,49 @@ function renderApis(container) {
   fetch('/api/catalog/apis')
     .then(r => r.json())
     .then(apis => {
-      const tbody = document.getElementById('apis-tbody');
-      if (!apis || apis.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No APIs found.</td></tr>';
-        return;
-      }
-      tbody.innerHTML = apis.map(a => `
-        <tr>
-          <td>
-            ${a.definitionUrl
-              ? `<a class="component-link" onclick="navigate('api', encodeURIComponent('${a.name}'))">${a.name}</a>`
-              : `<span>${a.name}</span>`
-            }
-          </td>
-          <td>${a.owner || '—'}</td>
-          <td>${a.type ? `<span class="tag">${a.type}</span>` : '—'}</td>
-          <td>${lifecycleBadge(a.lifecycle)}</td>
-          <td>${shortDesc(a.description)}</td>
-          <td>${renderTags(a.tags)}</td>
-        </tr>
-      `).join('');
+      apisData = (apis || []).slice().sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      renderApisRows();
     })
     .catch(err => {
-      const tbody = document.getElementById('apis-tbody');
-      tbody.innerHTML = `<tr><td colspan="6" class="empty-state">Failed to load APIs: ${err.message}</td></tr>`;
+      document.getElementById('apis-tbody').innerHTML =
+        `<tr><td colspan="6" class="empty-state">Failed to load APIs: ${err.message}</td></tr>`;
     });
+}
+
+function renderApisRows() {
+  const tbody = document.getElementById('apis-tbody');
+  if (!tbody) return;
+
+  const q = apisFilter.toLowerCase();
+  const filtered = q
+    ? apisData.filter(a =>
+        (a.name        || '').toLowerCase().includes(q) ||
+        (a.owner       || '').toLowerCase().includes(q) ||
+        (a.type        || '').toLowerCase().includes(q) ||
+        (a.description || '').toLowerCase().includes(q)
+      )
+    : apisData;
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No APIs match the filter.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(a => `
+    <tr>
+      <td>
+        ${a.definitionUrl
+          ? `<a class="component-link" onclick="navigate('api', encodeURIComponent('${a.name}'))">${a.name}</a>`
+          : `<span>${a.name}</span>`
+        }
+      </td>
+      <td>${a.owner || '—'}</td>
+      <td>${a.type ? `<span class="tag">${a.type}</span>` : '—'}</td>
+      <td>${lifecycleBadge(a.lifecycle)}</td>
+      <td>${shortDesc(a.description)}</td>
+      <td>${renderTags(a.tags)}</td>
+    </tr>
+  `).join('');
 }
 
 // Render OpenAPI view directly from a standalone API entry (not via component)
