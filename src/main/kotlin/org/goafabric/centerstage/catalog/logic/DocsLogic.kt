@@ -1,9 +1,6 @@
 package org.goafabric.centerstage.catalog.logic
 
 import jakarta.enterprise.context.ApplicationScoped
-import org.goafabric.centerstage.catalog.adapter.GitHubService
-import org.goafabric.centerstage.catalog.adapter.GitLabService
-import org.goafabric.centerstage.catalog.adapter.RemoteContentService
 import org.goafabric.centerstage.catalog.controller.dto.TechDoc
 import org.goafabric.centerstage.catalog.logic.mapper.CatalogMapper
 import org.goafabric.centerstage.catalog.persistence.ComponentRepository
@@ -15,15 +12,11 @@ class DocsLogic(
     val componentRepo: ComponentRepository,
     val docRepo: DocRepository,
     val catalogLoaderLogic: CatalogLoaderLogic,
-    val catalogMapper: CatalogMapper,
-    val gitHubService: GitHubService,
-    val gitLabService: GitLabService,
-    val remoteContentService: RemoteContentService
+    val catalogMapper: CatalogMapper
 ) {
 
     fun getDocs(componentName: String): List<TechDoc> =
         fromDatabase(componentName)
-            ?: fromRemote(componentName)
             ?: fromLocalFiles(componentName)
             ?: emptyList()
 
@@ -38,27 +31,16 @@ class DocsLogic(
     private fun fromDatabase(componentName: String): List<TechDoc>? =
         docRepo.findByComponentName(componentName).map { catalogMapper.toTechDoc(it) }.ifEmpty { null }
 
-    private fun fromRemote(componentName: String): List<TechDoc>? {
-        val component   = componentRepo.findByKindAndName("Component", componentName).firstOrNull()
-            ?: throw NoSuchElementException("Component not found: $componentName")
-        val techDocsRef = component.annotation("backstage.io/techdocs-ref") ?: return null
-        val sourcePath  = component.sourcePath ?: return null
-        return when {
-            sourcePath.startsWith("https://raw.githubusercontent.com") -> gitHubService.fetchDocs(sourcePath, techDocsRef)
-            remoteContentService.isGitLabUrl(sourcePath)               -> gitLabService.fetchDocs(sourcePath, techDocsRef)
-            else -> null
-        }
-    }
-
     private fun fromLocalFiles(componentName: String): List<TechDoc>? {
         val component   = componentRepo.findByKindAndName("Component", componentName).firstOrNull() ?: return null
         val techDocsRef = component.annotation("backstage.io/techdocs-ref") ?: return null
         val sourcePath  = component.sourcePath ?: return null
         if (sourcePath.startsWith("http://") || sourcePath.startsWith("https://")) return null
 
-        val docsDir = File(resolveDocsRoot(File(sourcePath), techDocsRef), "docs")
+        val docsRoot = resolveDocsRoot(File(sourcePath), techDocsRef)
+        val docsDir  = File(docsRoot, "docs")
         if (!docsDir.isDirectory) return null
-        return readDocsDir(docsDir, resolveDocsRoot(File(sourcePath), techDocsRef))
+        return readDocsDir(docsDir, docsRoot)
     }
 
     private fun readDocsDir(docsDir: File, docsRoot: File): List<TechDoc> {

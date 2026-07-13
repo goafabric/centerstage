@@ -31,7 +31,8 @@ class CatalogIngestionLogic(
 
     fun onStart(@Observes event: StartupEvent) = ingest()
 
-    @Scheduled(every = "{centerstage.ingestion.interval}")
+    // delayed = same as interval so the scheduler never double-fires at startup
+    @Scheduled(every = "{centerstage.ingestion.interval}", delayed = "{centerstage.ingestion.interval}")
     @Transactional
     fun ingest() {
         log.info("Starting catalog ingestion ...")

@@ -21,7 +21,6 @@ interface GitHubAdapter {
         @PathParam("repo") repo: String,
         @PathParam("path") path: String,
         @QueryParam("ref") ref: String,
-        @HeaderParam("Authorization") authorization: String,
         @HeaderParam("User-Agent") userAgent: String
     ): List<GitHubFile>
 }
