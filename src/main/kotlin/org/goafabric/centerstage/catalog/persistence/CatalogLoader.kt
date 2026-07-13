@@ -8,29 +8,24 @@ import io.quarkus.runtime.StartupEvent
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.enterprise.event.Observes
 import org.eclipse.microprofile.config.inject.ConfigProperty
+import org.goafabric.centerstage.catalog.adapter.RemoteContentService
 import org.goafabric.centerstage.catalog.persistence.entity.CatalogEo
-import java.net.HttpURLConnection
 import org.goafabric.centerstage.catalog.persistence.entity.DefinitionEo
 import org.goafabric.centerstage.catalog.persistence.entity.LinkEo
 import org.goafabric.centerstage.catalog.persistence.entity.MetadataEo
 import org.goafabric.centerstage.catalog.persistence.entity.SpecEo
 import org.slf4j.LoggerFactory
 import java.io.File
-import java.net.URI
 
 @ApplicationScoped
-class CatalogLoader {
+class CatalogLoader(
+    val remoteContentService: RemoteContentService
+) {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
     @ConfigProperty(name = "centerstage.catalog.file", defaultValue = "doc/catalog/entities-local.yaml")
     lateinit var catalogFile: String
-
-    @ConfigProperty(name = "gitlab.token", defaultValue = "")
-    lateinit var gitlabTokenConfig: String
-
-    private val gitlabToken: String
-        get() = gitlabTokenConfig.ifBlank { System.getenv("GITLAB_TOKEN") ?: "" }
 
     val entries: MutableList<CatalogEo> = mutableListOf()
 
@@ -58,7 +53,8 @@ class CatalogLoader {
         for (target in targets) {
             val resolvedTarget = resolveTarget(catalogFile, target)
             // Normalise to raw URL so sourcePath and $text resolution always use the fetchable form
-            val normalizedTarget = if (resolvedTarget.startsWith("http://") || resolvedTarget.startsWith("https://")) toRawUrl(resolvedTarget) else resolvedTarget
+            val normalizedTarget = if (resolvedTarget.startsWith("http://") || resolvedTarget.startsWith("https://"))
+                remoteContentService.toRawUrl(resolvedTarget) else resolvedTarget
             val content = readContent(normalizedTarget)
             if (content == null) {
                 log.warn("Target not found: $normalizedTarget")
@@ -74,24 +70,10 @@ class CatalogLoader {
         log.info("Catalog loaded: ${entries.size} entries (${entries.count { it.kind == "Component" }} components)")
     }
 
-    /** Reads content from a local file path or an HTTP(S) URL (converting blob URLs to raw). */
+    /** Reads content from a local file path or an HTTP(S) URL via RemoteContentService. */
     private fun readContent(path: String): String? {
         return if (path.startsWith("http://") || path.startsWith("https://")) {
-            try {
-                val rawUrl = toRawUrl(path)
-                log.debug("Fetching: $rawUrl")
-                val connection = URI(rawUrl).toURL().openConnection() as HttpURLConnection
-                connection.setRequestProperty("User-Agent", "centerstage")
-                // Pass GitLab token when fetching from a GitLab host
-                val token = gitlabToken
-                if (token.isNotBlank() && (rawUrl.contains("gitlab.com") || rawUrl.contains("/-/raw/"))) {
-                    connection.setRequestProperty("PRIVATE-TOKEN", token)
-                }
-                connection.inputStream.bufferedReader().readText()
-            } catch (e: Exception) {
-                log.warn("Failed to fetch $path: ${e.message}")
-                null
-            }
+            remoteContentService.fetchTextOrNull(remoteContentService.toRawUrl(path))
         } else {
             val file = resolveLocalFile(path)
             if (file.exists()) file.readText() else null
@@ -102,7 +84,6 @@ class CatalogLoader {
     private fun resolveTarget(base: String, target: String): String {
         if (target.startsWith("http://") || target.startsWith("https://")) return target
         return if (base.startsWith("http://") || base.startsWith("https://")) {
-            // Resolve relative path against the base URL directory
             val baseDir = base.substringBeforeLast("/")
             "$baseDir/${target.removePrefix("./")}"
         } else {
@@ -111,24 +92,14 @@ class CatalogLoader {
         }
     }
 
-    /** Converts a GitHub blob URL to a raw.githubusercontent.com URL, or a GitLab blob URL to a raw URL. */
-    private fun toRawUrl(url: String): String = when {
-        url.contains("github.com") && url.contains("/blob/") ->
-            url.replace("https://github.com", "https://raw.githubusercontent.com").replace("/blob/", "/")
-        // GitLab: https://gitlab.com/group/repo/-/blob/ref/path  →  /-/raw/ref/path
-        url.contains("/-/blob/") ->
-            url.replace("/-/blob/", "/-/raw/")
-        else -> url
-    }
-
     /**
      * Resolves a definition $text value:
      * - If it's already an absolute URL, convert blob → raw if needed.
      * - If it's a relative path and sourceLocation is a URL, resolve it relative to that URL's directory.
-     * - If it's a relative path and sourceLocation is a local file, keep as-is (served locally or by the frontend).
+     * - If it's a relative path and sourceLocation is a local file, keep as-is.
      */
     private fun resolveDefinitionUrl(text: String, sourceLocation: String): String {
-        if (text.startsWith("http://") || text.startsWith("https://")) return toRawUrl(text)
+        if (text.startsWith("http://") || text.startsWith("https://")) return remoteContentService.toRawUrl(text)
         if (sourceLocation.startsWith("http://") || sourceLocation.startsWith("https://")) {
             val baseDir = sourceLocation.substringBeforeLast("/")
             return "$baseDir/${text.removePrefix("./")}"

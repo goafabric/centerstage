@@ -12,7 +12,7 @@ import java.nio.charset.StandardCharsets
 @ApplicationScoped
 class GitLabService(
     @param:RestClient val gitLabAdapter: GitLabAdapter,
-    @param:ConfigProperty(name = "gitlab.token", defaultValue = "") val token: String
+    @param:ConfigProperty(name = "gitlab.token", defaultValue = "") private val token: String
 ) {
     private val log = LoggerFactory.getLogger(this.javaClass)
 

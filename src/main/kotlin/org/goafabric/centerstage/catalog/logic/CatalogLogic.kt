@@ -3,6 +3,7 @@ package org.goafabric.centerstage.catalog.logic
 import jakarta.enterprise.context.ApplicationScoped
 import org.goafabric.centerstage.catalog.adapter.GitHubService
 import org.goafabric.centerstage.catalog.adapter.GitLabService
+import org.goafabric.centerstage.catalog.adapter.RemoteContentService
 import org.goafabric.centerstage.catalog.controller.dto.Adr
 import org.goafabric.centerstage.catalog.controller.dto.Api
 import org.goafabric.centerstage.catalog.controller.dto.Component
@@ -21,7 +22,8 @@ class CatalogLogic(
     val catalogLoader: CatalogLoader,
     val catalogMapper: CatalogMapper,
     val gitHubService: GitHubService,
-    val gitLabService: GitLabService
+    val gitLabService: GitLabService,
+    val remoteContentService: RemoteContentService
 ) {
 
     fun getAllApis(): List<Api> =
@@ -149,7 +151,7 @@ class CatalogLogic(
         }
 
         // Remote GitLab URL — fetch via API
-        if (adrLocation != null && isGitLabUrl(adrLocation)) {
+        if (adrLocation != null && remoteContentService.isGitLabUrl(adrLocation)) {
             return gitLabService.fetchAdrs(adrLocation).map { catalogMapper.toAdr(it) }
         }
 
@@ -188,7 +190,7 @@ class CatalogLogic(
         }
 
         // Remote: sourcePath is a GitLab raw URL — fetch docs via GitLab API
-        if (isGitLabUrl(sourcePath) && sourcePath.contains("/-/raw/")) {
+        if (remoteContentService.isGitLabUrl(sourcePath) && sourcePath.contains("/-/raw/")) {
             return gitLabService.fetchDocs(sourcePath, techDocsRef)
         }
 
@@ -257,13 +259,6 @@ class CatalogLogic(
             ?.sortedBy { it.name }
             ?.map { catalogMapper.toAdr(AdrFileEo(name = it.nameWithoutExtension, content = it.readText())) }
             ?: emptyList()
-
-    /**
-     * Returns true for gitlab.com and self-hosted GitLab instances (any host containing "gitlab").
-     * Adjust the heuristic here if you use a custom self-hosted domain without "gitlab" in the name.
-     */
-    private fun isGitLabUrl(url: String): Boolean =
-        url.contains("gitlab.com") || (url.contains("/-/tree/") || url.contains("/-/raw/"))
 
     private fun resolveDir(catalogFile: File): File {
         val f = if (catalogFile.isAbsolute) catalogFile
