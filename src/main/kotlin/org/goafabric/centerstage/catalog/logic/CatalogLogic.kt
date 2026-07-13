@@ -189,8 +189,8 @@ class CatalogLogic(
             return gitHubService.fetchDocs(sourcePath, techDocsRef)
         }
 
-        // Remote: sourcePath is a GitLab raw URL — fetch docs via GitLab API
-        if (remoteContentService.isGitLabUrl(sourcePath) && sourcePath.contains("/-/raw/")) {
+        // Remote: sourcePath is a GitLab URL (blob, raw, or API) — fetch docs via GitLab API
+        if (remoteContentService.isGitLabUrl(sourcePath)) {
             return gitLabService.fetchDocs(sourcePath, techDocsRef)
         }
 
@@ -216,6 +216,23 @@ class CatalogLogic(
                 ?.map { TechDoc(name = it.nameWithoutExtension, content = it.readText()) }
                 ?: emptyList()
         }
+    }
+
+    fun getApiSpec(componentName: String): String {
+        val apis = getApis(componentName)
+        val definitionUrl = apis.firstOrNull { it.type == "openapi" && it.definitionUrl != null }?.definitionUrl
+            ?: throw NoSuchElementException("No OpenAPI definition found for component: $componentName")
+        return remoteContentService.fetchText(remoteContentService.toRawUrl(definitionUrl))
+    }
+
+    fun getApiSpecByName(apiName: String): String {
+        val api = catalogLoader.entries
+            .filter { it.kind == "API" }
+            .firstOrNull { it.metadata.name == apiName }
+            ?: throw NoSuchElementException("API not found: $apiName")
+        val definitionUrl = api.spec.definition?.text
+            ?: throw NoSuchElementException("No definition URL for API: $apiName")
+        return remoteContentService.fetchText(remoteContentService.toRawUrl(definitionUrl))
     }
 
     fun getDocsAssetFile(componentName: String, assetPath: String): File? {

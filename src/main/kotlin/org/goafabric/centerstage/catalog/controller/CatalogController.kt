@@ -22,6 +22,15 @@ class CatalogController(val catalogLogic: CatalogLogic) {
     fun getAllApis(): List<Api> = catalogLogic.getAllApis()
 
     @GET
+    @Path("/apis/{name}/spec")
+    @Produces(MediaType.WILDCARD)
+    fun getApiSpecByName(@PathParam("name") name: String): Response {
+        val spec = catalogLogic.getApiSpecByName(name)
+        val mediaType = if (spec.trimStart().startsWith("{")) MediaType.APPLICATION_JSON else "application/yaml"
+        return Response.ok(spec, mediaType).build()
+    }
+
+    @GET
     @Path("/components")
     fun getComponents(): List<Component> = catalogLogic.getComponents()
 
@@ -40,6 +49,15 @@ class CatalogController(val catalogLogic: CatalogLogic) {
     @GET
     @Path("/components/{name}/graph")
     fun getGraph(@PathParam("name") name: String): Graph = catalogLogic.getGraph(name)
+
+    @GET
+    @Path("/components/{name}/api-spec")
+    @Produces(MediaType.WILDCARD)
+    fun getApiSpec(@PathParam("name") name: String): Response {
+        val spec = catalogLogic.getApiSpec(name)
+        val mediaType = if (spec.trimStart().startsWith("{")) MediaType.APPLICATION_JSON else "application/yaml"
+        return Response.ok(spec, mediaType).build()
+    }
 
     @GET
     @Path("/components/{name}/docs")

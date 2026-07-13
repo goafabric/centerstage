@@ -86,8 +86,8 @@ function renderApiViewByName(container, apiName) {
         </div>
       `;
 
-      const resolvedUrl = convertToRawUrl(api.definitionUrl);
-      loadSwaggerUiCdn(() => loadSwaggerUi(resolvedUrl));
+      const specUrl = `/api/catalog/apis/${encodeURIComponent(api.name)}/spec`;
+      loadSwaggerUiCdn(() => loadSwaggerUi(specUrl));
     })
     .catch(err => {
       container.innerHTML = `<div class="empty-state">Error: ${err.message}</div>`;

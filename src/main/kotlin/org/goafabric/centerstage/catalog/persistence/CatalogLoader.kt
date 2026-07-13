@@ -95,12 +95,30 @@ class CatalogLoader(
     /**
      * Resolves a definition $text value:
      * - If it's already an absolute URL, convert blob → raw if needed.
-     * - If it's a relative path and sourceLocation is a URL, resolve it relative to that URL's directory.
+     * - If sourceLocation is a GitLab API raw URL (…/repository/files/{encodedPath}/raw?ref={ref}),
+     *   re-encode the relative path and build a new API URL for it.
+     * - If it's a relative path and sourceLocation is a GitHub/other URL, resolve relative to directory.
      * - If it's a relative path and sourceLocation is a local file, keep as-is.
      */
     private fun resolveDefinitionUrl(text: String, sourceLocation: String): String {
         if (text.startsWith("http://") || text.startsWith("https://")) return remoteContentService.toRawUrl(text)
         if (sourceLocation.startsWith("http://") || sourceLocation.startsWith("https://")) {
+            // GitLab API URL: https://{host}/api/v4/projects/{id}/repository/files/{encodedCatalogPath}/raw?ref={ref}
+            val gitlabApiRawRegex = Regex("""^(https?://[^/]+/api/v4/projects/[^/]+/repository/files/)(.+)(/raw\?ref=.+)$""")
+            val match = gitlabApiRawRegex.matchEntire(sourceLocation)
+            if (match != null) {
+                val apiBase    = match.groupValues[1]   // "https://host/api/v4/projects/{id}/repository/files/"
+                val refSuffix  = match.groupValues[3]   // "/raw?ref=develop"
+                // Decode the encoded catalog file path to get its directory
+                val encodedCatalogPath = match.groupValues[2]  // e.g. "some%2Fpath%2Fcatalog-info.yaml"
+                val catalogFilePath = java.net.URLDecoder.decode(encodedCatalogPath, java.nio.charset.StandardCharsets.UTF_8)
+                val catalogDir = if (catalogFilePath.contains("/")) catalogFilePath.substringBeforeLast("/") else ""
+                val relPath = text.removePrefix("./")
+                val resolvedPath = if (catalogDir.isEmpty()) relPath else "$catalogDir/$relPath"
+                val encodedPath = java.net.URLEncoder.encode(resolvedPath, java.nio.charset.StandardCharsets.UTF_8)
+                return "$apiBase$encodedPath$refSuffix"
+            }
+            // GitHub / other remote: resolve relative to the directory of the source URL
             val baseDir = sourceLocation.substringBeforeLast("/")
             return "$baseDir/${text.removePrefix("./")}"
         }

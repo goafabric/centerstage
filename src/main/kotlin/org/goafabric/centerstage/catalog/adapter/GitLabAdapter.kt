@@ -1,5 +1,6 @@
 package org.goafabric.centerstage.catalog.adapter
 
+import jakarta.ws.rs.Encoded
 import jakarta.ws.rs.GET
 import jakarta.ws.rs.HeaderParam
 import jakarta.ws.rs.Path
@@ -17,7 +18,7 @@ interface GitLabAdapter {
     @Path("/projects/{id}/repository/tree")
     @Produces(MediaType.APPLICATION_JSON)
     fun listTree(
-        @PathParam("id") projectId: String,
+        @Encoded @PathParam("id") projectId: String,
         @QueryParam("path") path: String,
         @QueryParam("ref") ref: String,
         @QueryParam("per_page") perPage: Int,
@@ -28,8 +29,8 @@ interface GitLabAdapter {
     @Path("/projects/{id}/repository/files/{filePath}/raw")
     @Produces(MediaType.TEXT_PLAIN)
     fun getRawFile(
-        @PathParam("id") projectId: String,
-        @PathParam("filePath") filePath: String,
+        @Encoded @PathParam("id") projectId: String,
+        @Encoded @PathParam("filePath") filePath: String,
         @QueryParam("ref") ref: String,
         @HeaderParam("PRIVATE-TOKEN") privateToken: String
     ): String

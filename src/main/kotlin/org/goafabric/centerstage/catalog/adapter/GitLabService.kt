@@ -39,15 +39,17 @@ class GitLabService(
     }
 
     /**
-     * Given a raw GitLab catalog-info URL and a techdocs-ref like "dir:.",
+     * Given a GitLab catalog-info URL (blob, raw, or API format) and a techdocs-ref like "dir:.",
      * fetches all .md files from the resolved docs/ directory on GitLab.
      *
-     * rawCatalogUrl example:
+     * Accepted URL formats:
      *   https://gitlab.com/mygroup/myrepo/-/raw/main/catalog/guidelines/catalog-info.yaml
+     *   https://gitlab.com/mygroup/myrepo/-/blob/main/catalog/guidelines/catalog-info.yaml
+     *   https://gitlab.com/api/v4/projects/mygroup%2Fmyrepo/repository/files/catalog%2Fguidelines%2Fcatalog-info.yaml/raw?ref=main
      */
     fun fetchDocs(rawCatalogUrl: String, techDocsRef: String): List<TechDoc> {
         return try {
-            val (projectId, ref, catalogPath) = parseRawUrl(rawCatalogUrl)
+            val (projectId, ref, catalogPath) = parseCatalogUrl(rawCatalogUrl)
 
             val refPath = techDocsRef.removePrefix("dir:").trim().removePrefix("./").trimEnd('/')
             val catalogDir = if (catalogPath.contains("/")) catalogPath.substringBeforeLast("/") else ""
@@ -82,35 +84,48 @@ class GitLabService(
         // Strip scheme + host to get the path segments
         val withoutScheme = url.removePrefix("https://").removePrefix("http://")
         val slashIdx = withoutScheme.indexOf('/')
-        // segments after the host: [namespace, repo, "-", "tree", ref, ...rest]
+        // segments after the host: [namespace..., "-", "tree"|"blob", ref, ...rest]
         val pathPart = withoutScheme.substring(slashIdx + 1).trimEnd('/')
         val parts = pathPart.split("/")
-        // Find "/-/tree/" marker
-        val treeIdx = parts.indexOf("tree")
-        require(treeIdx >= 2 && parts.getOrNull(treeIdx - 1) == "-") { "Not a GitLab tree URL: $url" }
-        val namespace = parts.take(treeIdx - 1).joinToString("/")  // supports sub-groups
-        val ref  = parts[treeIdx + 1]
-        val path = parts.drop(treeIdx + 2).joinToString("/")
+        // Accept both "/-/tree/" and "/-/blob/" — blob pointing to a directory is valid
+        val markerIdx = parts.indexOfFirst { it == "tree" || it == "blob" }
+        require(markerIdx >= 2 && parts.getOrNull(markerIdx - 1) == "-") { "Not a GitLab tree URL: $url" }
+        val namespace = parts.take(markerIdx - 1).joinToString("/")  // supports sub-groups
+        val ref  = parts[markerIdx + 1]
+        val path = parts.drop(markerIdx + 2).joinToString("/")
         val projectId = URLEncoder.encode(namespace, StandardCharsets.UTF_8)
         return TreeParts(projectId, ref, path)
     }
 
     /**
-     * Parses a GitLab raw file URL:
-     *   https://gitlab.com/{namespace}/{repo}/-/raw/{ref}/{path/to/file}
+     * Parses any GitLab catalog-info URL into (urlEncodedProjectId, ref, filePath).
      *
-     * Returns (urlEncodedProjectId, ref, filePath).
+     * Handles:
+     *   - /-/raw/{ref}/{path}   — GitLab browser raw URL
+     *   - /-/blob/{ref}/{path}  — GitLab browser blob URL
+     *   - /api/v4/projects/{encodedId}/repository/files/{encodedPath}/raw?ref={ref}
      */
-    private fun parseRawUrl(url: String): TreeParts {
+    private fun parseCatalogUrl(url: String): TreeParts {
+        // GitLab API URL: …/api/v4/projects/{id}/repository/files/{encodedPath}/raw?ref={ref}
+        val apiRegex = Regex("""^https?://[^/]+/api/v4/projects/([^/]+)/repository/files/(.+)/raw\?ref=([^&]+)""")
+        val apiMatch = apiRegex.find(url)
+        if (apiMatch != null) {
+            val projectId = apiMatch.groupValues[1]   // already URL-encoded
+            val filePath  = java.net.URLDecoder.decode(apiMatch.groupValues[2], java.nio.charset.StandardCharsets.UTF_8)
+            val ref       = apiMatch.groupValues[3]
+            return TreeParts(projectId, ref, filePath)
+        }
+
+        // Browser blob/raw URL: /{namespace}/-/{raw|blob}/{ref}/{path}
         val withoutScheme = url.removePrefix("https://").removePrefix("http://")
         val slashIdx = withoutScheme.indexOf('/')
         val pathPart = withoutScheme.substring(slashIdx + 1).trimEnd('/')
         val parts = pathPart.split("/")
-        val rawIdx = parts.indexOf("raw")
-        require(rawIdx >= 2 && parts.getOrNull(rawIdx - 1) == "-") { "Not a GitLab raw URL: $url" }
-        val namespace = parts.take(rawIdx - 1).joinToString("/")
-        val ref      = parts[rawIdx + 1]
-        val filePath = parts.drop(rawIdx + 2).joinToString("/")
+        val markerIdx = parts.indexOfFirst { it == "raw" || it == "blob" }
+        require(markerIdx >= 2 && parts.getOrNull(markerIdx - 1) == "-") { "Not a GitLab raw/blob URL: $url" }
+        val namespace = parts.take(markerIdx - 1).joinToString("/")
+        val ref      = parts[markerIdx + 1]
+        val filePath = parts.drop(markerIdx + 2).joinToString("/")
         val projectId = URLEncoder.encode(namespace, StandardCharsets.UTF_8)
         return TreeParts(projectId, ref, filePath)
     }
