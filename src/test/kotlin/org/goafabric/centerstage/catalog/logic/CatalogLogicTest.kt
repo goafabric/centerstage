@@ -18,6 +18,9 @@ class CatalogLogicTest {
     @Inject
     lateinit var catalogLogic: CatalogLogic
 
+    @Inject
+    lateinit var apiLogic: ApiLogic
+
     @InjectMock
     lateinit var catalogLoaderLogic: CatalogLoaderLogic
 
@@ -73,14 +76,14 @@ class CatalogLogicTest {
 
     @Test
     fun `getApis returns apis for component`() {
-        val result = catalogLogic.getApis("test-service")
+        val result = apiLogic.getApis("test-service")
         assertThat(result).hasSize(1)
         assertThat(result.first().name).isEqualTo("test-api")
     }
 
     @Test
     fun `getApis throws for unknown component`() {
-        assertThatThrownBy { catalogLogic.getApis("unknown") }
+        assertThatThrownBy { apiLogic.getApis("unknown") }
             .isInstanceOf(NoSuchElementException::class.java)
     }
 }
