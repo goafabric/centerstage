@@ -29,7 +29,7 @@ class ComponentControllerIT {
             .extract().jsonPath().getMap<String, Any>(".")
 
         assertThat(component["name"]).isEqualTo("person-service")
-        assertThat(component["owner"]).isEqualTo("team-alpha")
+        assertThat(component["owner"]).isEqualTo("team-green")
         assertThat(component["type"]).isEqualTo("service")
     }
 
@@ -70,10 +70,10 @@ class ComponentControllerIT {
             .extract().jsonPath()
 
         val nodeIds = graph.getList<Map<String, Any>>("nodes").map { it["id"] }
-        assertThat(nodeIds).contains("person-service", "person-api", "person-db")
+        assertThat(nodeIds).contains("person-service", "person-api", "callee-service")
 
         val edges = graph.getList<Map<String, Any>>("edges")
-        assertThat(edges).anyMatch { it["source"] == "person-service" && it["target"] == "person-api" && it["relation"] == "providesApis" }
-        assertThat(edges).anyMatch { it["source"] == "person-service" && it["target"] == "person-db"  && it["relation"] == "dependsOn" }
+        assertThat(edges).anyMatch { it["source"] == "person-service" && it["target"] == "person-api"      && it["relation"] == "providesApis" }
+        assertThat(edges).anyMatch { it["source"] == "person-service" && it["target"] == "callee-service"  && it["relation"] == "dependsOn" }
     }
 }
