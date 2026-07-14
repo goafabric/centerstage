@@ -8,6 +8,7 @@ import java.net.URI
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
+
 /**
  * Single entry point for all outbound HTTP content fetching.
  * Knows which auth headers to attach per provider based on configured base URLs.

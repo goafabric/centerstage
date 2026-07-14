@@ -4,19 +4,19 @@ import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import org.goafabric.centerstage.catalog.adapter.RemoteContentService
 import org.goafabric.centerstage.catalog.controller.dto.Api
-import org.goafabric.centerstage.catalog.logic.mapper.CatalogMapper
+import org.goafabric.centerstage.catalog.logic.mapper.ComponentMapper
 import org.goafabric.centerstage.catalog.persistence.ComponentRepository
 import org.goafabric.centerstage.catalog.persistence.entity.ComponentEo
 
 @ApplicationScoped
 class ApiLogic(
-    val catalogMapper: CatalogMapper,
+    val componentMapper: ComponentMapper,
     val remoteContentService: RemoteContentService
 ) {
     @Inject lateinit var componentRepo: ComponentRepository
 
     fun getAllApis(): List<Api> =
-        componentRepo.findByKind("API").map { catalogMapper.toApi(it) }
+        componentRepo.findByKind("API").map { componentMapper.toApi(it) }
 
     fun getApis(componentName: String): List<Api> {
         val component = componentRepo.findByKindAndName("Component", componentName).firstOrNull()
@@ -24,7 +24,7 @@ class ApiLogic(
         val apiNames = component.splitList(component.providesApis)
         return componentRepo.findByKind("API")
             .filter { it.name in apiNames }
-            .map { catalogMapper.toApi(it) }
+            .map { componentMapper.toApi(it) }
     }
 
     fun getApiSpec(componentName: String): String {

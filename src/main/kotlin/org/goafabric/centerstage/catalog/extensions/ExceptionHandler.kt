@@ -1,6 +1,5 @@
-package org.goafabric.centerstage.extensions
+package org.goafabric.centerstage.catalog.extensions
 
-import jakarta.ws.rs.NotFoundException
 import jakarta.ws.rs.WebApplicationException
 import jakarta.ws.rs.core.Response
 import jakarta.ws.rs.ext.ExceptionMapper

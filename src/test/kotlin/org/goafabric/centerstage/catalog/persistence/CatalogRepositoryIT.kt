@@ -4,7 +4,7 @@ import io.quarkus.test.junit.QuarkusTest
 import jakarta.inject.Inject
 import jakarta.transaction.Transactional
 import org.assertj.core.api.Assertions.assertThat
-import org.goafabric.centerstage.catalog.logic.mapper.CatalogMapper
+import org.goafabric.centerstage.catalog.logic.mapper.ComponentMapper
 import org.goafabric.centerstage.catalog.persistence.AdrRepository
 import org.goafabric.centerstage.catalog.persistence.ComponentRepository
 import org.goafabric.centerstage.catalog.persistence.DocRepository
@@ -21,7 +21,7 @@ class CatalogRepositoryIT {
     @Inject lateinit var componentRepo: ComponentRepository
     @Inject lateinit var adrRepo: AdrRepository
     @Inject lateinit var docRepo: DocRepository
-    @Inject lateinit var catalogMapper: CatalogMapper
+    @Inject lateinit var componentMapper: ComponentMapper
 
     @BeforeEach
     @Transactional
@@ -114,7 +114,7 @@ class CatalogRepositoryIT {
     @Test
     fun `catalogMapper toComponent splits comma fields correctly`() {
         val eo = componentRepo.findByKindAndName("Component", "person-service").first()
-        val dto = catalogMapper.toComponent(eo)
+        val dto = componentMapper.toComponent(eo)
         assertThat(dto.name).isEqualTo("person-service")
         assertThat(dto.tags).containsExactly("java", "microservice")
         assertThat(dto.owner).isEqualTo("team-alpha")
@@ -124,7 +124,7 @@ class CatalogRepositoryIT {
     @Test
     fun `catalogMapper toApi maps definitionUrl`() {
         val eo = componentRepo.findByKind("API").first()
-        val dto = catalogMapper.toApi(eo)
+        val dto = componentMapper.toApi(eo)
         assertThat(dto.name).isEqualTo("person-api")
         assertThat(dto.definitionUrl).isEqualTo("https://example.com/openapi.json")
     }

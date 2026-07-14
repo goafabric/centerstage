@@ -184,17 +184,29 @@ tbody tr:hover { background: #fafbff; }
   text-overflow: ellipsis;
 }
 
-/* Catalog table uses fixed layout so Description absorbs leftover space */
-#catalog-table {
+/* Catalog and APIs tables use fixed layout so Description absorbs leftover space */
+#catalog-table,
+#apis-table {
   table-layout: fixed;
 }
 
-#catalog-table .col-name      { width: 20%; }
-#catalog-table .col-owner     { width: 10%; }
-#catalog-table .col-type      { width: 8%; }
-#catalog-table .col-lifecycle { width: 12%; }
-#catalog-table .col-description { width: auto; }
-#catalog-table .col-tags      { width: 22%; }
+#catalog-table .col-name,
+#apis-table .col-name      { width: 20%; }
+
+#catalog-table .col-owner,
+#apis-table .col-owner     { width: 10%; }
+
+#catalog-table .col-type,
+#apis-table .col-type      { width: 8%; }
+
+#catalog-table .col-lifecycle,
+#apis-table .col-lifecycle { width: 12%; }
+
+#catalog-table .col-description,
+#apis-table .col-description { width: auto; }
+
+#catalog-table .col-tags,
+#apis-table .col-tags      { width: 22%; }
 
 .component-link {
   color: #7c83fd;

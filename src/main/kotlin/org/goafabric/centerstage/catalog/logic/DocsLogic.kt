@@ -2,7 +2,7 @@ package org.goafabric.centerstage.catalog.logic
 
 import jakarta.enterprise.context.ApplicationScoped
 import org.goafabric.centerstage.catalog.controller.dto.TechDoc
-import org.goafabric.centerstage.catalog.logic.mapper.CatalogMapper
+import org.goafabric.centerstage.catalog.logic.mapper.DocsMapper
 import org.goafabric.centerstage.catalog.persistence.ComponentRepository
 import org.goafabric.centerstage.catalog.persistence.DocRepository
 import java.io.File
@@ -12,7 +12,7 @@ class DocsLogic(
     val componentRepo: ComponentRepository,
     val docRepo: DocRepository,
     val catalogLoaderLogic: CatalogLoaderLogic,
-    val catalogMapper: CatalogMapper
+    val docsMapper: DocsMapper
 ) {
 
     fun getDocs(componentName: String): List<TechDoc> =
@@ -29,7 +29,7 @@ class DocsLogic(
     }
 
     private fun fromDatabase(componentName: String): List<TechDoc>? =
-        docRepo.findByComponentName(componentName).map { catalogMapper.toTechDoc(it) }.ifEmpty { null }
+        docRepo.findByComponentName(componentName).map { docsMapper.toTechDoc(it) }.ifEmpty { null }
 
     private fun fromLocalFiles(componentName: String): List<TechDoc>? {
         val component   = componentRepo.findByKindAndName("Component", componentName).firstOrNull() ?: return null

@@ -2,7 +2,7 @@ package org.goafabric.centerstage.catalog.logic
 
 import jakarta.enterprise.context.ApplicationScoped
 import org.goafabric.centerstage.catalog.controller.dto.Adr
-import org.goafabric.centerstage.catalog.logic.mapper.CatalogMapper
+import org.goafabric.centerstage.catalog.logic.mapper.AdrMapper
 import org.goafabric.centerstage.catalog.persistence.AdrRepository
 import org.goafabric.centerstage.catalog.persistence.ComponentRepository
 import org.goafabric.centerstage.catalog.persistence.entity.AdrEo
@@ -12,7 +12,7 @@ import java.io.File
 class AdrLogic(
     val componentRepo: ComponentRepository,
     val adrRepo: AdrRepository,
-    val catalogMapper: CatalogMapper
+    val adrMapper: AdrMapper
 ) {
 
     fun getComponentNamesWithAdrs(): List<String> =
@@ -24,7 +24,7 @@ class AdrLogic(
             ?: emptyList()
 
     private fun fromDatabase(componentName: String): List<Adr>? =
-        adrRepo.findByComponentName(componentName).map { catalogMapper.toAdr(it) }.ifEmpty { null }
+        adrRepo.findByComponentName(componentName).map { adrMapper.toAdr(it) }.ifEmpty { null }
 
     private fun fromLocalFiles(componentName: String): List<Adr>? {
         val component  = componentRepo.findByKindAndName("Component", componentName).firstOrNull() ?: return null
@@ -42,7 +42,7 @@ class AdrLogic(
     private fun readAdrFiles(dir: File): List<Adr> =
         dir.listFiles { f -> f.extension == "md" }
             ?.sortedBy { it.name }
-            ?.map { catalogMapper.toAdr(AdrEo().apply { name = it.nameWithoutExtension; content = it.readText() }) }
+            ?.map { adrMapper.toAdr(AdrEo().apply { name = it.nameWithoutExtension; content = it.readText() }) }
             ?: emptyList()
 
     private fun resolveParentDir(file: File): File {

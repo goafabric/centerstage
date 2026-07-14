@@ -14,15 +14,15 @@ function renderApis(container) {
              autocomplete="off"/>
     </div>
     <div class="table-container">
-      <table>
+      <table id="apis-table">
         <thead>
           <tr>
-            <th>Name</th>
-            <th>Owner</th>
-            <th>Type</th>
-            <th>Lifecycle</th>
-            <th>Description</th>
-            <th>Tags</th>
+            <th class="col-nowrap col-name">Name</th>
+            <th class="col-nowrap col-owner">Owner</th>
+            <th class="col-nowrap col-type">Type</th>
+            <th class="col-nowrap col-lifecycle">Lifecycle</th>
+            <th class="col-description">Description</th>
+            <th class="col-nowrap col-tags">Tags</th>
           </tr>
         </thead>
         <tbody id="apis-tbody">
@@ -65,17 +65,17 @@ function renderApisRows() {
 
   tbody.innerHTML = filtered.map(a => `
     <tr>
-      <td>
+      <td class="col-nowrap col-name">
         ${a.definitionUrl
           ? `<a class="component-link" onclick="navigate('api', encodeURIComponent('${a.name}'))">${a.name}</a>`
           : `<span>${a.name}</span>`
         }
       </td>
-      <td>${a.owner || '—'}</td>
-      <td>${a.type ? `<span class="tag">${a.type}</span>` : '—'}</td>
-      <td>${lifecycleBadge(a.lifecycle)}</td>
-      <td>${shortDesc(a.description)}</td>
-      <td>${renderTags(a.tags)}</td>
+      <td class="col-nowrap col-owner">${a.owner || '—'}</td>
+      <td class="col-nowrap col-type">${a.type ? `<span class="tag">${a.type}</span>` : '—'}</td>
+      <td class="col-nowrap col-lifecycle">${lifecycleBadge(a.lifecycle)}</td>
+      <td class="col-description"><span class="desc-text">${shortDesc(a.description)}</span></td>
+      <td class="col-nowrap col-tags">${renderTags(a.tags)}</td>
     </tr>
   `).join('');
 }
