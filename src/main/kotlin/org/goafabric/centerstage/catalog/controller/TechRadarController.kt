@@ -1,4 +1,4 @@
-package org.goafabric.centerstage.techradar.controller
+package org.goafabric.centerstage.catalog.controller
 
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.ws.rs.GET
