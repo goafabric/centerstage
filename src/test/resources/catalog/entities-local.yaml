@@ -1,0 +1,9 @@
+apiVersion: backstage.io/v1alpha1
+kind: Location
+metadata:
+  name: local-catalog
+  description: Local test catalog
+spec:
+  targets:
+    - ./person-service.yaml
+    - ./person-api.yaml

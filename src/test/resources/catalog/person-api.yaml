@@ -1,0 +1,11 @@
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: person-api
+  description: Person REST API
+spec:
+  type: openapi
+  lifecycle: production
+  owner: team-alpha
+  definition:
+    $text: https://petstore3.swagger.io/api/v3/openapi.json

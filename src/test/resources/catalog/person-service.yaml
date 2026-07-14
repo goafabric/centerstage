@@ -1,0 +1,17 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: person-service
+  description: Manages persons
+  tags:
+    - java
+    - microservice
+  annotations:
+    backstage.io/techdocs-ref: dir:.
+spec:
+  type: service
+  lifecycle: production
+  owner: team-alpha
+  providesApis:
+    - person-api
+  dependsOn: []

@@ -3,15 +3,13 @@ package org.goafabric.centerstage.catalog.controller
 import io.quarkus.test.junit.QuarkusTest
 import io.restassured.RestAssured.given
 import org.assertj.core.api.Assertions.assertThat
-import org.hamcrest.Matchers.greaterThan
-import org.hamcrest.Matchers.notNullValue
 import org.junit.jupiter.api.Test
 
 @QuarkusTest
 class ComponentControllerIT {
 
     @Test
-    fun `GET components returns list`() {
+    fun `GET components returns list with person-service`() {
         val components = given()
             .`when`().get("/api/catalog/components")
             .then()
@@ -19,27 +17,20 @@ class ComponentControllerIT {
             .extract().jsonPath().getList<Map<String, Any>>(".")
 
         assertThat(components).isNotEmpty
+        assertThat(components.map { it["name"] }).contains("person-service")
     }
 
     @Test
     fun `GET component by name returns component`() {
-        // First get the list to find a valid name
-        val components = given()
-            .`when`().get("/api/catalog/components")
-            .then()
-            .statusCode(200)
-            .extract().jsonPath().getList<Map<String, Any>>(".")
-
-        assertThat(components).isNotEmpty
-        val firstName = components.first()["name"] as String
-
         val component = given()
-            .`when`().get("/api/catalog/components/$firstName")
+            .`when`().get("/api/catalog/components/person-service")
             .then()
             .statusCode(200)
             .extract().jsonPath().getMap<String, Any>(".")
 
-        assertThat(component["name"]).isEqualTo(firstName)
+        assertThat(component["name"]).isEqualTo("person-service")
+        assertThat(component["owner"]).isEqualTo("team-alpha")
+        assertThat(component["type"]).isEqualTo("service")
     }
 
     @Test
@@ -52,34 +43,20 @@ class ComponentControllerIT {
 
     @Test
     fun `GET apis for component returns list`() {
-        val components = given()
-            .`when`().get("/api/catalog/components")
+        val apis = given()
+            .`when`().get("/api/catalog/components/person-service/apis")
             .then()
             .statusCode(200)
             .extract().jsonPath().getList<Map<String, Any>>(".")
 
-        assertThat(components).isNotEmpty
-        val firstName = components.first()["name"] as String
-
-        given()
-            .`when`().get("/api/catalog/components/$firstName/apis")
-            .then()
-            .statusCode(200)
+        assertThat(apis).isNotEmpty
+        assertThat(apis.map { it["name"] }).contains("person-api")
     }
 
     @Test
     fun `GET adrs for component returns list`() {
-        val components = given()
-            .`when`().get("/api/catalog/components")
-            .then()
-            .statusCode(200)
-            .extract().jsonPath().getList<Map<String, Any>>(".")
-
-        assertThat(components).isNotEmpty
-        val firstName = components.first()["name"] as String
-
         given()
-            .`when`().get("/api/catalog/components/$firstName/adrs")
+            .`when`().get("/api/catalog/components/person-service/adrs")
             .then()
             .statusCode(200)
     }
