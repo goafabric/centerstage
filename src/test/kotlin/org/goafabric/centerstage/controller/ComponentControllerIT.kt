@@ -1,11 +1,11 @@
 package org.goafabric.centerstage.controller
 
-import io.quarkus.test.junit.QuarkusTest
+import io.quarkus.test.junit.QuarkusIntegrationTest
 import io.restassured.RestAssured.given
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
-@QuarkusTest
+@QuarkusIntegrationTest
 class ComponentControllerIT {
 
     @Test
