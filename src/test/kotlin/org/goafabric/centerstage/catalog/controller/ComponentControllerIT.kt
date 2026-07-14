@@ -60,4 +60,20 @@ class ComponentControllerIT {
             .then()
             .statusCode(200)
     }
+
+    @Test
+    fun `GET graph for component returns nodes and edges`() {
+        val graph = given()
+            .`when`().get("/api/catalog/components/person-service/graph")
+            .then()
+            .statusCode(200)
+            .extract().jsonPath()
+
+        val nodeIds = graph.getList<Map<String, Any>>("nodes").map { it["id"] }
+        assertThat(nodeIds).contains("person-service", "person-api", "person-db")
+
+        val edges = graph.getList<Map<String, Any>>("edges")
+        assertThat(edges).anyMatch { it["source"] == "person-service" && it["target"] == "person-api" && it["relation"] == "providesApis" }
+        assertThat(edges).anyMatch { it["source"] == "person-service" && it["target"] == "person-db"  && it["relation"] == "dependsOn" }
+    }
 }

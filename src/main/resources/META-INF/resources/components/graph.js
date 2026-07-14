@@ -56,7 +56,10 @@ function renderGraphView(container, name) {
   `;
 
   fetch(`/api/catalog/components/${encodeURIComponent(name)}/graph`)
-    .then(r => r.json())
+    .then(r => {
+      if (!r.ok) throw new Error(`Server returned ${r.status}`);
+      return r.json();
+    })
     .then(graph => {
       loadScript(CYTOSCAPE_JS, () => drawGraph(graph, name));
     })

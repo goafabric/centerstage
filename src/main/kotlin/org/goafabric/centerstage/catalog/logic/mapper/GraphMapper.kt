@@ -5,6 +5,7 @@ import org.goafabric.centerstage.catalog.persistence.entity.ComponentEo
 import org.mapstruct.Context
 import org.mapstruct.Mapper
 import org.mapstruct.Mapping
+import org.mapstruct.Named
 import org.mapstruct.ReportingPolicy
 
 @Mapper(componentModel = "cdi", unmappedTargetPolicy = ReportingPolicy.IGNORE)
@@ -17,7 +18,8 @@ interface GraphMapper {
     @Mapping(target = "isFocus", expression = "java(isFocus)")
     fun toGraphNode(eo: ComponentEo, @Context isFocus: Boolean): GraphNode
 
-    fun kindToType(kind: String): String = when (kind) {
+    @Named("kindToType")
+    fun kindToType(kind: String?): String = when (kind) {
         "Component" -> "component"
         "Resource"  -> "resource"
         "API"       -> "api"

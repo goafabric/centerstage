@@ -7,3 +7,4 @@ spec:
   targets:
     - ./person-service.yaml
     - ./person-api.yaml
+    - ./person-db.yaml

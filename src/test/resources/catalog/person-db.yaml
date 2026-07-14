@@ -1,0 +1,8 @@
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: person-db
+  description: PostgreSQL database for person-service
+spec:
+  type: database
+  owner: devops
