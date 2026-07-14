@@ -8,9 +8,9 @@ function renderTechRadar(container) {
       <div class="page-title">Tech Radar</div>
       <div class="page-subtitle">Technology choices and recommendations</div>
     </div>
-    <div class="card" style="padding: 24px; overflow-x: auto; overflow-y: visible;">
-      <div id="radar-container" style="min-width: 1450px;">
-        <svg id="radar"></svg>
+    <div class="card" style="padding: 24px;">
+      <div id="radar-container" style="width: 100%;">
+        <svg id="radar" style="width: 100%; height: auto; display: block;"></svg>
       </div>
       <div id="radar-loading" class="loading">Loading Tech Radar...</div>
     </div>
@@ -81,6 +81,14 @@ function initRadar(data) {
     entries,
     print_layout: true
   });
+
+  // Make the SVG scale to fit its container
+  const svg = document.getElementById('radar');
+  if (svg) {
+    svg.setAttribute('viewBox', '0 0 1450 1000');
+    svg.removeAttribute('width');
+    svg.removeAttribute('height');
+  }
 }
 
 function loadRadarDeps(callback) {
