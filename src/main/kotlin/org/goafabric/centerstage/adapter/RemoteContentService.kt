@@ -16,7 +16,8 @@ import java.nio.charset.StandardCharsets
  */
 @ApplicationScoped
 class RemoteContentService(
-    @param:ConfigProperty(name = "gitlab.token", defaultValue = "") private val gitlabToken: String
+    @param:ConfigProperty(name = "gitlab.token", defaultValue = "") private val gitlabToken: String,
+    @param:ConfigProperty(name = "github.token", defaultValue = "") private val githubToken: String
 ) {
     private val log = LoggerFactory.getLogger(this.javaClass)
 
@@ -79,6 +80,8 @@ class RemoteContentService(
      */
     fun isGitLabUrl(url: String): Boolean = url.contains("/-/") || url.contains("/api/v4/")
 
+    fun githubAuthHeader(): String? = if (githubToken.isNotBlank()) "Bearer $githubToken" else null
+
     /**
      * Fetches the content of [rawUrl] as a string, attaching the appropriate
      * auth header based on which SCM host the URL belongs to.
@@ -90,6 +93,9 @@ class RemoteContentService(
 
         if (gitlabToken.isNotBlank() && isGitLabUrl(rawUrl)) {
             connection.setRequestProperty("PRIVATE-TOKEN", gitlabToken)
+        }
+        if (githubToken.isNotBlank() && rawUrl.contains("githubusercontent.com")) {
+            connection.setRequestProperty("Authorization", "Bearer $githubToken")
         }
 
         return connection.inputStream.bufferedReader().readText()
