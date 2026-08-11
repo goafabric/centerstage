@@ -25,7 +25,7 @@ function renderAdrsIndex(container, selectedComponent) {
     </div>
   `;
 
-  fetch('/api/catalog/adrs/components')
+  fetch(`${BASE_PATH}/api/catalog/adrs/components`)
     .then(r => r.json())
     .then(names => {
       _adrsComponents = (names || []).map(name => ({ name }));
@@ -73,7 +73,7 @@ function selectAdrsComponent(componentName) {
   if (!right) return;
   right.innerHTML = '<div class="loading">Loading ADRs…</div>';
 
-  fetch(`/api/catalog/components/${encodeURIComponent(componentName)}/adrs`)
+  fetch(`${BASE_PATH}/api/catalog/components/${encodeURIComponent(componentName)}/adrs`)
     .then(r => r.json())
     .then(adrs => {
       if (!adrs || adrs.length === 0) {
@@ -137,7 +137,7 @@ function renderAdrView(container, name) {
     <div id="adr-content"><div class="loading">Loading ADRs...</div></div>
   `;
 
-  fetch(`/api/catalog/components/${encodeURIComponent(name)}/adrs`)
+  fetch(`${BASE_PATH}/api/catalog/components/${encodeURIComponent(name)}/adrs`)
     .then(r => r.json())
     .then(adrs => {
       const content = document.getElementById('adr-content');

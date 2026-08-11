@@ -8,7 +8,7 @@ function renderOverview(container, name) {
     <div class="loading">Loading...</div>
   `;
 
-  fetch(`/api/catalog/components/${encodeURIComponent(name)}`)
+  fetch(`${BASE_PATH}/api/catalog/components/${encodeURIComponent(name)}`)
     .then(r => {
       if (!r.ok) throw new Error('Component not found');
       return r.json();

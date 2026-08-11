@@ -19,7 +19,7 @@ function renderDocsView(container, name, initialIndex) {
     <div id="docs-content"><div class="loading">Loading Docs...</div></div>
   `;
 
-  fetch(`/api/catalog/components/${encodeURIComponent(name)}/docs`)
+  fetch(`${BASE_PATH}/api/catalog/components/${encodeURIComponent(name)}/docs`)
     .then(r => r.json())
     .then(docs => {
       const content = document.getElementById('docs-content');
@@ -74,7 +74,7 @@ function selectDoc(index) {
       // href may be an object in newer marked versions
       const src = (typeof href === 'object' && href !== null) ? (href.href || href) : href;
       const resolvedSrc = src.startsWith('http') ? src
-        : `/api/catalog/components/${encodeURIComponent(componentName)}/docs/assets/${src}`;
+        : `${BASE_PATH}/api/catalog/components/${encodeURIComponent(componentName)}/docs/assets/${src}`;
       const titleAttr = title ? ` title="${title}"` : '';
       return `<img src="${resolvedSrc}" alt="${text}"${titleAttr} style="max-width:100%;height:auto;">`;
     };
@@ -94,7 +94,7 @@ function renderDocsIndex(container) {
     <div id="docs-index-content"><div class="loading">Loading...</div></div>
   `;
 
-  fetch('/api/catalog/components')
+  fetch(`${BASE_PATH}/api/catalog/components`)
     .then(r => r.json())
     .then(components => {
       const withDocs = components.filter(c =>

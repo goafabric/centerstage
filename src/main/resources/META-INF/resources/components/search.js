@@ -18,7 +18,7 @@ function clearSearch() {
 }
 
 function fetchAndRender(query) {
-  fetch(`/api/catalog/search?q=${encodeURIComponent(query)}`)
+  fetch(`${BASE_PATH}/api/catalog/search?q=${encodeURIComponent(query)}`)
     .then(r => r.json())
     .then(results => renderDropdown(results))
     .catch(() => closeSearch());
