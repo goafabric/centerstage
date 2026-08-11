@@ -94,7 +94,8 @@ class RemoteContentService(
         if (gitlabToken.isNotBlank() && isGitLabUrl(rawUrl)) {
             connection.setRequestProperty("PRIVATE-TOKEN", gitlabToken)
         }
-        if (githubToken.isNotBlank() && rawUrl.contains("githubusercontent.com")) {
+
+        if (githubToken.isNotBlank() && (githubToken != "none") && rawUrl.contains("githubusercontent.com")) {
             connection.setRequestProperty("Authorization", "Bearer $githubToken")
         }
 
