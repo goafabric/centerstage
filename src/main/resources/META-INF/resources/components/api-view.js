@@ -55,7 +55,7 @@ function renderApiView(container, name) {
           ${openApiEntries.length > 1 ? `
             <div style="margin-bottom:16px;display:flex;gap:8px">
               ${openApiEntries.map((a, i) => `
-                <span class="tag" style="cursor:pointer" onclick="loadSwaggerUi(`${BASE_PATH}/api/catalog/apis/${encodeURIComponent(a.name)}/spec`)">${a.name}</span>
+                <span class="tag" style="cursor:pointer" onclick="loadSwaggerUi('${BASE_PATH}/api/catalog/apis/${encodeURIComponent(a.name)}/spec')">${a.name}</span>
               `).join('')}
             </div>` : ''}
           <div id="swagger-ui"></div>

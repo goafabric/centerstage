@@ -10,9 +10,22 @@
     // BASE_PATH is the root-path prefix without a trailing slash (e.g. "" or "/centerstage").
     (function() {
       var path = window.location.pathname;
-      // Strip everything from the last "/" onward to get the directory portion,
-      // then remove the trailing slash so we get "/centerstage" (or "" for root).
-      var base = path.replace(/\/[^/]*$/, '') || '';
+      // Remove trailing slash, then strip the last path segment (index.html or empty)
+      // only if the result looks like a file (no extension segments for directories).
+      // Strategy: if path ends with "/" or ".html", strip the last segment.
+      // Otherwise keep the full path as the base (it IS the context root directory).
+      var base;
+      if (path === '/' || path === '') {
+        base = '';
+      } else {
+        // Normalise: remove trailing slash
+        var normalised = path.replace(/\/$/, '');
+        // If the last segment looks like a file (contains a dot), strip it
+        var lastSegment = normalised.replace(/^.*\//, '');
+        base = lastSegment.indexOf('.') !== -1
+          ? normalised.replace(/\/[^/]*$/, '')
+          : normalised;
+      }
       window.BASE_PATH = base;
       // Also set <base href> so relative asset URLs (styles.css, component/*.js) resolve correctly.
       var baseEl = document.createElement('base');
