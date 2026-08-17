@@ -55,7 +55,7 @@ function renderGraphView(container, name) {
     </div>
   `;
 
-  fetch(`/api/catalog/components/${encodeURIComponent(name)}/graph`)
+  fetch(`${BASE_PATH}/api/catalog/components/${encodeURIComponent(name)}/graph`)
     .then(r => {
       if (!r.ok) throw new Error(`Server returned ${r.status}`);
       return r.json();

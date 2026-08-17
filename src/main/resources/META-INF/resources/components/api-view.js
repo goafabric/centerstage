@@ -23,7 +23,7 @@ function renderApiView(container, name) {
     <div id="api-content"><div class="loading">Loading APIs...</div></div>
   `;
 
-  fetch(`/api/catalog/components/${encodeURIComponent(name)}/apis`)
+  fetch(`${BASE_PATH}/api/catalog/components/${encodeURIComponent(name)}/apis`)
     .then(r => r.json())
     .then(apis => {
       const content = document.getElementById('api-content');
@@ -48,14 +48,14 @@ function renderApiView(container, name) {
 
       // Render tabs if multiple, default to first
       const api = openApiEntries[0];
-      const specUrl = `/api/catalog/components/${encodeURIComponent(name)}/api-spec`;
+      const specUrl = `${BASE_PATH}/api/catalog/components/${encodeURIComponent(name)}/api-spec`;
 
       content.innerHTML = `
         <div class="card" style="padding:16px">
           ${openApiEntries.length > 1 ? `
             <div style="margin-bottom:16px;display:flex;gap:8px">
               ${openApiEntries.map((a, i) => `
-                <span class="tag" style="cursor:pointer" onclick="loadSwaggerUi('/api/catalog/apis/${encodeURIComponent(a.name)}/spec')">${a.name}</span>
+                <span class="tag" style="cursor:pointer" onclick="loadSwaggerUi(`${BASE_PATH}/api/catalog/apis/${encodeURIComponent(a.name)}/spec`)">${a.name}</span>
               `).join('')}
             </div>` : ''}
           <div id="swagger-ui"></div>

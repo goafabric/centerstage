@@ -24,7 +24,7 @@ class GitHubService(
             val docsBase = if (catalogDir.isEmpty()) "" else "$catalogDir/"
             val docsPath = if (refPath == ".") "${docsBase}docs" else "${docsBase}${refPath}/docs"
 
-            gitHubAdapter.listContents(owner, repo, docsPath, ref, "centerstage")
+            gitHubAdapter.listContents(owner, repo, docsPath, ref, "centerstage", remoteContentService.githubAuthHeader())
                 .filter { it.type == "file" && it.name.endsWith(".md") }
                 .sortedBy { it.name }
                 .mapNotNull { file ->
@@ -40,7 +40,7 @@ class GitHubService(
     fun fetchAdrs(treeUrl: String): List<AdrEo> {
         return try {
             val (owner, repo, ref, path) = parseTreeUrl(treeUrl)
-            gitHubAdapter.listContents(owner, repo, path, ref, "centerstage")
+            gitHubAdapter.listContents(owner, repo, path, ref, "centerstage", remoteContentService.githubAuthHeader())
                 .filter { it.type == "file" && it.name.endsWith(".md") }
                 .sortedBy { it.name }
                 .mapNotNull { file ->

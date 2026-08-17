@@ -16,7 +16,7 @@ function renderTechRadar(container) {
     </div>
   `;
 
-  fetch('/api/techradar')
+  fetch(`${BASE_PATH}/api/techradar`)
     .then(r => {
       if (!r.ok) throw new Error('Tech radar not configured or unavailable');
       return r.json();

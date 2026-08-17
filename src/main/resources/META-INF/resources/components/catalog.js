@@ -46,7 +46,7 @@ function renderCatalog(container) {
     updateSortIcons();
   });
 
-  fetch('/api/catalog/components')
+  fetch(`${BASE_PATH}/api/catalog/components`)
     .then(r => r.json())
     .then(components => {
       catalogData = components || [];

@@ -32,7 +32,7 @@ function renderApis(container) {
     </div>
   `;
 
-  fetch('/api/catalog/apis')
+  fetch(`${BASE_PATH}/api/catalog/apis`)
     .then(r => r.json())
     .then(apis => {
       apisData = (apis || []).slice().sort((a, b) => (a.name || '').localeCompare(b.name || ''));
@@ -82,7 +82,7 @@ function renderApisRows() {
 
 // Render OpenAPI view directly from a standalone API entry (not via component)
 function renderApiViewByName(container, apiName) {
-  fetch('/api/catalog/apis')
+  fetch(`${BASE_PATH}/api/catalog/apis`)
     .then(r => r.json())
     .then(apis => {
       const api = apis.find(a => a.name === decodeURIComponent(apiName));
@@ -113,7 +113,7 @@ function renderApiViewByName(container, apiName) {
         </div>
       `;
 
-      const specUrl = `/api/catalog/apis/${encodeURIComponent(api.name)}/spec`;
+      const specUrl = `${BASE_PATH}/api/catalog/apis/${encodeURIComponent(api.name)}/spec`;
       loadSwaggerUiCdn(() => loadSwaggerUi(specUrl));
     })
     .catch(err => {
